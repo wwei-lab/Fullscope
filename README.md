@@ -132,12 +132,12 @@ bamtoref - BAM to Reference Table
 
 Complete pipeline generates the following directory structure:
 
-output/
+`output/
 ├── Segment/           # Segmented FASTQ files
 ├── Alignment/         # Alignment BAM files
 ├── CIDextract/        # Extracted CID files
 ├── CIDmap/           # Mapped CID files
-└── sample1.summary.txt # Analysis summary
+└── sample1.summary.txt # Analysis summary`
 
 
 # Dependencies
