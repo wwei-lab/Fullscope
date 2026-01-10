@@ -4,13 +4,13 @@
 
 ---
 
-## 🧬 Overview  
+##  Overview  
 Fullscope-seq is a high-performance pipeline that turns **Stereo-seq long-read spatial transcriptomic FASTQ** into **cell-resolution CID maps**.  
 Everything is written in C++17 and engineered for Linux servers with ≥32 GB RAM.
 
 ---
 
-## 🚀 Quick Start (5 commands)
+##  Quick Start (5 commands)
 
 1. Clone  
    ```bash
@@ -38,7 +38,7 @@ Everything is written in C++17 and engineered for Linux servers with ≥32 GB RA
 
 ---
 
-## 📦 System Requirements
+## System Requirements
 
 | Component       | Requirement               |
 |-----------------|---------------------------|
@@ -49,7 +49,7 @@ Everything is written in C++17 and engineered for Linux servers with ≥32 GB RA
 
 ---
 
-## 🛠️ Installation
+## Installation
 
 ```bash
 # 1. clone
@@ -64,7 +64,7 @@ make -j$(nproc)
 
 ---
 
-## 📖 Step-by-step (if you prefer modular runs)
+## Step-by-step (if you prefer modular runs)
 
 | Step | Command |
 |------|---------|
@@ -75,7 +75,7 @@ make -j$(nproc)
 
 ---
 
-## 🔍 Parameter Bible
+## Parameter Bible
 
 ### `count` – single-command pipeline
 ```
@@ -109,7 +109,7 @@ precise: `./Fullscope-1.5 build_idx p list.txt 16 7 index_precise.cid` |
 
 ---
 
-## 📁 Output Structure
+## Output Structure
 
 ```
 output/
@@ -122,7 +122,7 @@ output/
 
 ---
 
-## ⚠️ Notes & Pro-tips
+## Notes & Pro-tips
 
 1. **Dependencies** – ensure `minimap2` and `samtools` are in `$PATH`.  
 2. **Memory** – 1 GB per 1 M reads is a safe rule of thumb.  
@@ -131,7 +131,7 @@ output/
 
 ---
 
-## 🆘 Help & Version
+## Help & Version
 
 ```bash
 ./Fullscope-1.5          # print help
@@ -140,9 +140,8 @@ output/
 
 ---
 
-## 📄 License
+## License
 
 Apache 2.0 – see [LICENSE](LICENSE) for details.
-
 ---
 ```
