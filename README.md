@@ -1,6 +1,6 @@
 ```markdown
 # Fullscope-seq  
-**A C++ toolset for Stereo-seq: from raw FASTQ to CID mapping in one command.**
+**A C++ toolset for  long-read spatial transcriptomic data (Stereo-seq with ONT/Pacbio/Cyclone): from raw FASTQ to CID mapping in one command.**
 
 ---
 
