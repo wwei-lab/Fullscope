@@ -1,4 +1,4 @@
-<img width="1946" height="1564" alt="image" src="https://github.com/user-attachments/assets/6fbe2895-21e3-47c5-999b-573362723bfd" /># Fullscope-seq  
+# Fullscope-seq  
 **A C++ toolset for  long-read spatial transcriptomic data (Stereo-seq with ONT/Pacbio/Cyclone): from raw FASTQ to CID mapping in one command.**
 
 ---
