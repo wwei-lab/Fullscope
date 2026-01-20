@@ -19,7 +19,7 @@ Everything is written in C++17 and engineered for Linux servers with ≥32 GB RA
 
 2. Run the complete pipeline  
    ```bash
-   ./Fullscope-1.5 count \
+   ./Fullscope-1.0 count \
      input.fq adapters.fa anchor.fa 0.8 \
      genes.gtf genome.fa index.cid index_threshold.txt \
      7 6 16 ./output sample1
@@ -58,7 +58,7 @@ git clone https://github.com/wwei-lab/Fullscope.git && cd Fullscope
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j$(nproc)
-# binary is now ./Fullscope-1.5
+# binary is now ./Fullscope-1.0
 ```
 
 ---
@@ -67,10 +67,10 @@ make -j$(nproc)
 
 | Step | Command |
 |------|---------|
-| 1. FASTQ segmentation | `./Fullscope-1.5 process_fq input.fq adapters.fa anchor.fa 0.8 16 segmented.fq` |
+| 1. FASTQ segmentation | `./Fullscope-1.0 process_fq input.fq adapters.fa anchor.fa 0.8 16 segmented.fq` |
 | 2. Alignment | `minimap2 -K500m --secondary=no -a -x splice --splice-flank=yes -t 16 genome.fa segmented.fq \| samtools sort -o aligned.bam` |
-| 3. CID extraction | `./Fullscope-1.5 extract aligned.bam genes.gtf extracted_cid.tsv 16` |
-| 4. CID mapping | `./Fullscope-1.5 map extracted_cid.tsv index.cid index_threshold.txt mapped_cid.tsv 16 7 6` |
+| 3. CID extraction | `./Fullscope-1.0 extract aligned.bam genes.gtf extracted_cid.tsv 16` |
+| 4. CID mapping | `./Fullscope-1.0 map extracted_cid.tsv index.cid index_threshold.txt mapped_cid.tsv 16 7 6` |
 
 ---
 
@@ -78,7 +78,7 @@ make -j$(nproc)
 
 ### `count` – single-command pipeline
 ```
-./Fullscope-1.5 count \
+./Fullscope-1.0 count \
   <input.fq> <adapters.fa> <anchor.fa> <seg_thresh> \
   <ref.gtf> <ref.fa> <index.cid> <index_thresh.txt> \
   <k> <buckets> <threads> <outDir> <prefix>
@@ -97,14 +97,14 @@ make -j$(nproc)
 
 | Tool | One-liner |
 |------|-----------|
-| `process_fq` | `./Fullscope-1.5 process_fq in.fq adapters.fa anchor.fa 0.8 16 out.fq` |
-| `extract` | `./Fullscope-1.5 extract aligned.bam genes.gtf cid.tsv 16` |
-| `extract_fq` | `./Fullscope-1.5 extract_fq in.fq cid.tsv 16` |
-| `map` | `./Fullscope-1.5 map cid.tsv index.cid thresh.txt out.tsv 16 7 6` |
-| `map_p` (precise) | `./Fullscope-1.5 map_p cid.tsv index.cid out.tsv 16 7` |
-| `build_idx` | fast: `./Fullscope-1.5 build_idx f list.txt 16 7 6 index.cid`  
-precise: `./Fullscope-1.5 build_idx p list.txt 16 7 index_precise.cid` |
-| `bamtoref` | `./Fullscope-1.5 bamtoref genes.gtf in.bam ref_list.txt out 16 T` |
+| `process_fq` | `./Fullscope-1.0 process_fq in.fq adapters.fa anchor.fa 0.8 16 out.fq` |
+| `extract` | `./Fullscope-1.0 extract aligned.bam genes.gtf cid.tsv 16` |
+| `extract_fq` | `./Fullscope-1.0 extract_fq in.fq cid.tsv 16` |
+| `map` | `./Fullscope-1.0 map cid.tsv index.cid thresh.txt out.tsv 16 7 6` |
+| `map_p` (precise) | `./Fullscope-1.0 map_p cid.tsv index.cid out.tsv 16 7` |
+| `build_idx` | fast: `./Fullscope-1.0 build_idx f list.txt 16 7 6 index.cid`  
+precise: `./Fullscope-1.0 build_idx p list.txt 16 7 index_precise.cid` |
+| `bamtoref` | `./Fullscope-1.0 bamtoref genes.gtf in.bam ref_list.txt out 16 T` |
 
 ---
 
@@ -133,7 +133,7 @@ output/
 ## Help & Version
 
 ```bash
-./Fullscope-1.5          # print help
-./Fullscope-1.5 --version # 1.5.0 (Jan 2026)
+./Fullscope-1.0          # print help
+./Fullscope-1.0 --version # 1.5.0 (Jan 2026)
 ```
 
