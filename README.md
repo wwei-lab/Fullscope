@@ -1,4 +1,4 @@
-# Fullscope-seq  
+<img width="1946" height="1564" alt="image" src="https://github.com/user-attachments/assets/6fbe2895-21e3-47c5-999b-573362723bfd" /># Fullscope-seq  
 **A C++ toolset for  long-read spatial transcriptomic data (Stereo-seq with ONT/Pacbio/Cyclone): from raw FASTQ to CID mapping in one command.**
 
 ---
@@ -8,6 +8,7 @@ Fullscope-seq is a high-performance pipeline that turns **Stereo-seq long-read s
 Everything is written in C++17 and engineered for Linux servers with ≥32 GB RAM.
 
 ---
+<img width="1946" height="1564" alt="image" src="https://github.com/user-attachments/assets/9eac6d61-a68b-4263-8ea4-cd5c2355b7ae" />
 
 ##  Quick Start (5 commands)
 
