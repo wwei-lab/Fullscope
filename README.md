@@ -133,7 +133,6 @@ output/
 ## Help & Version
 
 ```bash
-./Fullscope-1.0          # print help
-./Fullscope-1.0 --version # 1.5.0 (Jan 2026)
+./Fullscope-1.0
 ```
 
