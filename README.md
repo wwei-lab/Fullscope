@@ -137,9 +137,3 @@ output/
 ./Fullscope-1.5 --version # 1.5.0 (Jan 2026)
 ```
 
----
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
----
-```
