@@ -55,14 +55,15 @@ CID extraction/mapping   splice-aware alignment
 ### Recommended: conda or mamba
 
 Fullscope is supported on 64-bit Linux. The build requires a C++23 compiler,
-CMake, SeqAn3, cereal and HTSlib. The supplied environment also installs the
-command-line and R dependencies used by the complete workflow.
+CMake, SeqAn3, cereal and HTSlib. The supplied core environment installs the
+build and command-line dependencies; a complete environment with the optional
+R/Bambu stack is also provided.
 
 ```bash
 git clone https://github.com/wwei-lab/Fullscope.git
 cd Fullscope
 
-mamba env create -f environment.yml
+mamba env create -f environment-core.yml
 conda activate fullscope
 
 bash install.sh --prefix "$CONDA_PREFIX"
@@ -71,14 +72,15 @@ bash install.sh --prefix "$CONDA_PREFIX"
 If `mamba` is unavailable, replace the first command with:
 
 ```bash
-conda env create -f environment.yml
+conda env create -f environment-core.yml
 ```
 
-For segmentation, CID processing, and alignment without the optional R/Bambu
-stages, create the smaller core environment instead:
+The core environment supports segmentation, CID processing, and alignment. To
+also install the optional R/Bambu transcript-annotation dependencies, create
+the complete environment instead:
 
 ```bash
-mamba env create -f environment-core.yml
+mamba env create -f environment.yml
 conda activate fullscope
 bash install.sh --prefix "$CONDA_PREFIX"
 ```
