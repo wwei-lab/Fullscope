@@ -16,9 +16,9 @@ using namespace std;
 
 
 void print_usage() {
-    cerr << "Usage:\n"
-         << "  count <input.fq> <adapters.fa> <segment_threshold> <refgtf> <refgenome> <index.cid> <index_threshold.txt> <kmer=7> <bucketnum=6> <threads> <outfold> <outprex>\n"
-         << "  process_fq <input.fq> <adapters.fa> <threshold> <threads> <output.fq>\n"
+    std::cerr << "Usage:\n"
+         << "  count <input.fq> <adapters.fa> <anchor.fa> <segment_threshold> <refgtf> <refgenome> <index.cid> <index_threshold.txt> <kmer=7> <bucketnum=6> <threads> <outfold> <outprex>\n"
+         << "  process_fq <input.fq> <adapters.fa> <anchor.fa> <threshold> <threads> <output.fq>\n"
          << "  extract   <input.bam> <genes.gtf> <output.tsv> <threads=4> \n"
          << "  extract_fq   <input.fq> <output.tsv> <threads=4> \n"
          << "  map       <reads.txt> <index.cid> <index_threshold.txt> <output.txt> <threads=4> <kmer=7> <bucketnum=6>\n"
@@ -37,36 +37,32 @@ int main(int argc, char** argv) {
 
     try {
         if (command == "count") {
-            if (argc < 13) {
-                cerr << "extract requires at least 11 arguments\n";
+            if (argc < 15) {
+                std::cerr << "count requires 13 arguments\n";
                 print_usage();
                 return 1;
             }
             string input_fq = argv[2];
             string adapter_fa = argv[3];
-            double seg_thred = stod(argv[4]);
-            string gtf = argv[5];
-            string genome = argv[6];
-            string index = argv[7];
-            string index_thred = argv[8];
-            int kmer = stoi(argv[9]);
-            int bucketnum = stoi(argv[10]);
-            int threads = stoi(argv[11]);
-            string outfold = argv[12];
-            string outprex = argv[13];
-            
+            string anchor_fa = argv[4];
+            double seg_thred = stod(argv[5]);
+            string gtf = argv[6];
+            string genome = argv[7];
+            string index = argv[8];
+            string index_thred = argv[9];
+            int kmer = stoi(argv[10]);
+            int bucketnum = stoi(argv[11]);
+            int threads = stoi(argv[12]);
+            string outfold = argv[13];
+            string outprex = argv[14];
+
             string summary1;
             // fastq segment #################
             cout << "processing segmentation..." << endl;
             string outfold1 = outfold + "/Segment/";
-            if (!std::filesystem::exists(outfold1)) {
-                std::filesystem::create_directories(outfold1);
-            } else {
-                std::cerr << "failed to create directory" << std::endl;
-                return -1;
-            }
+            std::filesystem::create_directories(outfold1);
             string outfile1 = outfold1 + outprex + ".fq";
-            summary1 = FsFastqSegment::fastq_segment_main(input_fq, adapter_fa, seg_thred, threads, outfile1);
+            summary1 = FsFastqSegment::fastq_segment_main(input_fq, adapter_fa, anchor_fa, seg_thred, threads, outfile1);
 
             // minimap2 ##################
             cout << "processing minimap2 mapping..." << endl;
@@ -75,7 +71,7 @@ int main(int argc, char** argv) {
                 std::filesystem::create_directories(outfold2);
             }
             string outfile2 = outfold2 + outprex + ".bam";
-            string command1 = "minimap2 -K500m --secondary=no -a -x splice --splice-flank=yes -t " + to_string(threads) + " " + 
+            string command1 = "minimap2 -K500m --secondary=no -a -x splice --splice-flank=yes -t " + to_string(threads) + " " +
             genome + " " + outfile1 + " | samtools sort " + "> " + outfile2;
             int ret = system(command1.c_str());
             if (ret != 0) {
@@ -116,36 +112,35 @@ int main(int argc, char** argv) {
             string outfiles = outfold + outprex + ".summary.txt";
             ofstream out(outfiles);
             out << summary1 << summary2 << summary3;
-            
-        } else if (command == "process_fq") {
-            if (argc < 7) {
-                cerr << "process_fq requires 6 arguments\n";
-                print_usage();
-                return 1;
-            }
-            double threshold = stod(argv[4]);
-            int threads = stoi(argv[5]);
-            string summary = FsFastqSegment::fastq_segment_main(argv[2], argv[3], threshold, threads, argv[6]);
-            cout << summary << endl;
 
-        } else if (command == "extract") {
-            if (argc < 5) {
-                cerr << "extract requires at least 4 arguments\n";
+        } else if (command == "process_fq") {
+            if (argc < 8) {
+                std::cerr << "process_fq requires 6 arguments\n";
                 print_usage();
                 return 1;
             }
-            
+            double threshold = stod(argv[5]);
+            int threads = stoi(argv[6]);
+            string summary = FsFastqSegment::fastq_segment_main(argv[2], argv[3], argv[4], threshold, threads, argv[7]);
+            cout << summary << endl;
+        } else if (command == "extract") {
+            if (argc < 6) {
+                std::cerr << "extract requires at least 4 arguments\n";
+                print_usage();
+                return 1;
+            }
+
             CIDExtract::GeneRanges gene_ranges;
             CIDExtract::load_gene_ranges(argv[3], gene_ranges);
-            
+
             CIDExtract::Config config;
             config.num_threads = stoi(argv[5]);
-            
+
             CIDExtract::process_bam(argv[2], argv[4], gene_ranges, config);
 
         } else if (command == "extract_fq") {
-            if (argc < 4) {
-                cerr << "extract requires at least 3 arguments\n";
+            if (argc < 5) {
+                std::cerr << "extract requires at least 3 arguments\n";
                 print_usage();
                 return 1;
             }
@@ -153,41 +148,37 @@ int main(int argc, char** argv) {
             string output = argv[3];
             CIDExtractFastq::Config config;
             config.num_threads = stoi(argv[4]);
-            
+
             CIDExtractFastq::extractcid_fastq(inputfq, output, config);
 
         } else if (command == "map") {
-            if (argc < 7) {
-                cerr << "map requires at least 5 arguments\n";
+            if (argc < 9) {
+                std::cerr << "map requires 7 arguments\n";
                 print_usage();
                 return 1;
             }
-            int threads,kmer,bucketnum;
-
-            if (argc >= 7) threads = stoi(argv[6]);
-            if (argc >= 8) kmer = stoi(argv[7]);
-            if (argc >= 9) bucketnum = stoi(argv[8]);
+            int threads = stoi(argv[6]);
+            int kmer = stoi(argv[7]);
+            int bucketnum = stoi(argv[8]);
 
             CIDmapping::CIDmap_processer(argv[2], argv[3], threads, kmer, bucketnum,argv[5],argv[4]);
 
         } else if (command == "map_p") {
-            if (argc < 6) {
-                cerr << "map requires at least 4 arguments\n";
+            if (argc < 7) {
+                std::cerr << "map_p requires 5 arguments\n";
                 print_usage();
                 return 1;
             }
-            int threads,kmer,bucketnum;
-
-            threads = stoi(argv[5]);
-            kmer = stoi(argv[6]);
+            int threads = stoi(argv[5]);
+            int kmer = stoi(argv[6]);
             string readfile = argv[2];
             string indexfile = argv[3];
             string outfile = argv[4];
             CIDmappingPrecise::CIDmap_processer_precise(readfile, indexfile, threads, kmer, outfile);
 
         } else if (command == "build_idx") {
-            if (argc < 7) {
-                cerr << "build_idx requires 5 arguments\n";
+            if (argc < 8) {
+                std::cerr << "build_idx requires 6 arguments\n";
                 print_usage();
                 return 1;
             }
@@ -207,7 +198,7 @@ int main(int argc, char** argv) {
         } else if (command == "bamtoref") {
             // "  bamtoref <gtf> <bam> <reflist> <output> <threads=4>\n"
             if (argc < 8) {
-                cerr << "bamtoref requires 6 arguments\n";
+                std::cerr << "bamtoref requires 6 arguments\n";
                 print_usage();
                 return 1;
             }
@@ -221,11 +212,11 @@ int main(int argc, char** argv) {
             HandleStereoBam::build_reftable(gtf_file, ref_bam, ref_cid, outprex, threads, tag);
 
         } else {
-            cerr << "Unknown command: " << command << "\n";
+            std::cerr << "Unknown command: " << command << "\n";
             return 1;
         }
     } catch (const exception& e) {
-        cerr << "Error: " << e.what() << "\n";
+        std::cerr << "Error: " << e.what() << "\n";
         return 1;
     }
 

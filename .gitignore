@@ -1,0 +1,13 @@
+/build/
+/install/
+*.o
+*.so
+*.a
+*.bam
+*.bai
+*.qs
+*.log
+*.out
+*.err
+fullscope_toolkit/log/
+fullscope_toolkit/testdata/output/

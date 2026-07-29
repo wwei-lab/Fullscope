@@ -8,7 +8,7 @@
 #include <sstream>
 #include <numeric>
 #include <vector>
-#include <atomic>  
+#include <atomic>
 using namespace std;
 using namespace FsUtils;
 
@@ -20,7 +20,7 @@ unordered_map<string, string> rc_cache;
 
 vector<AlignmentResult> find_adapters(const string& target,
                                     const vector<pair<string, string>>& adapters,
-                                    double threshold) 
+                                    double threshold)
 {
     // 建立k-mer索引 (k=10)
     const int k = 10;
@@ -40,29 +40,29 @@ vector<AlignmentResult> find_adapters(const string& target,
         const string& seq = adapter.second;
         const int L = seq.length();
         const int max_ed = static_cast<int>(threshold * L);
-        
+
         // 如果序列太短或阈值太高，退化为暴力搜索
         if (L < k || max_ed >= L - 1) {
             for (int pos = 0; pos <= static_cast<int>(target.length()) - L; ++pos) {
                 string window = target.substr(pos, L);
-                
+
                 // 正向比对
                 int dist = edlib_align(window, seq, max_ed);
                 if (dist != -1 && dist <= max_ed) {
                     results.push_back({pos, pos + L - 1, dist, id, false});
                 }
-                
+
                 // 反向比对
                 int rc_dist = edlib_align(window, rc_cache[seq], max_ed);
                 if (rc_dist != -1 && rc_dist <= max_ed) {
                     results.push_back({pos, pos + L - 1, rc_dist, id + "_RC", true});
                 }
             }
-        } 
+        }
         else {
             // 使用k-mer索引优化
             unordered_set<int> candidate_positions;
-            
+
             // 查找候选位置函数
             auto find_candidates = [&](const string& sequence) {
                 const int step = max_ed + 1;  // 鸽巢原理步长
@@ -79,28 +79,28 @@ vector<AlignmentResult> find_adapters(const string& target,
                     }
                 }
             };
-            
+
             // 查找正向序列候选位置
             find_candidates(seq);
-            
+
             // 查找反向互补序列候选位置
             find_candidates(rc_cache[seq]);
-            
+
             // 处理候选位置
             for (int pos : candidate_positions) {
                 // 跳过已处理位置（不同adapter可能在同一位置）
-                if (processed_positions.find(pos) != processed_positions.end()) 
+                if (processed_positions.find(pos) != processed_positions.end())
                    continue;
-                
+
                 string window = target.substr(pos, L);
-                
+
                 // 正向比对
                 int dist = edlib_align(window, seq, max_ed);
                 if (dist != -1 && dist <= max_ed) {
                     results.push_back({pos, pos + L - 1, dist, id, false});
                     processed_positions.insert(pos);
                 }
-                
+
                 // 反向比对
                 int rc_dist = edlib_align(window, rc_cache[seq], max_ed);
                 if (rc_dist != -1 && rc_dist <= max_ed) {
@@ -166,7 +166,7 @@ std::vector<Segment> generate_segments(
                     segments.push_back({seg_start, seg_end, curr.adapter_id, "-", header});
                 }
             } else {
-                
+
                 const auto& next = matches[j+1];
                 if(next.is_rc) {
                     int seg_start = curr.end + 1;
@@ -201,7 +201,7 @@ vector<pair<string, string>> load_adapters(const string& path) {
     vector<pair<string, string>> adapters;
     ifstream file(path);
     if(!file.is_open()) {
-        cerr << "Error opening adapter file: " << path << endl;
+        std::cerr << "Error opening adapter file: " << path << endl;
         exit(1);
     }
 
@@ -245,21 +245,21 @@ void handle_fastq_chunk(
     //    << start_idx << "-" <<  end_idx << " reads\n";
     ofstream out_file(tmp_output_path, ios::binary);
     if (!out_file) {
-        cerr << "Error opening: " << tmp_output_path << endl;
+        std::cerr << "Error opening: " << tmp_output_path << endl;
         return;
     }
     ofstream summary_file(tmp_summary_path, ios::binary);
     // char out_buffer[1024 * 1024];  // 1MB输出缓冲区
     // out_file.rdbuf()->pubsetbuf(out_buffer, sizeof(out_buffer));
-    
+
     // 打开输入文件并定位
     ifstream in_file(fastq_path);
     // char in_buffer[1024 * 1024];  // 1MB输入缓冲区
     // in_file.rdbuf()->pubsetbuf(in_buffer, sizeof(in_buffer));
-    
+
     // 定位到任务块起始位置
     in_file.seekg(read_offsets[start_idx]);
-    
+
     // 处理当前任务块
     for (uint64_t current_read = start_idx; current_read < end_idx; ++current_read) {
         string header, sequence, plus, quality;
@@ -267,16 +267,16 @@ void handle_fastq_chunk(
         getline(in_file, sequence);
         getline(in_file, plus);
         getline(in_file, quality);
-        
+
         // 生成全局唯一ID
         string global_id = "read_" + to_string(current_read);
-        
+
         // 比对和分段
         auto matches = find_adapters(sequence, adapters, threshold);
         if (matches.empty()) {
             out_file << "@" << global_id << "|Noadapter\n"
                      << sequence << "\n+\n" << quality << "\n";
-            
+
             summary_file << global_id << "\tNoadapter\t0\t"
                          << sequence.size() << "\t*\n";
             local_segments++;
@@ -285,9 +285,9 @@ void handle_fastq_chunk(
             for (const auto& seg : segments) {
                 int start_idx = seg.start - 1;
                 int length = seg.end - seg.start + 1;
-                if (length < 100) continue;
+                //if (length < 100) continue;
                 if (start_idx < 0 || start_idx + length > sequence.size()) continue;
-                
+
                 string subseq, subqual;
                 if (seg.strand == "+") {
                     int reslen = sequence.size() - start_idx - length;
@@ -301,11 +301,11 @@ void handle_fastq_chunk(
                     subseq = reverse_complement(subseq);
                     reverse(subqual.begin(), subqual.end());
                 }
-                
+
                 out_file << "@" << seg.read_id << "|" << seg.adapter_id << "|"
                          << seg.start << "-" << seg.end << "(" << seg.strand << ")\n"
                          << subseq << "\n+\n" << subqual << "\n";
-                
+
                 summary_file << seg.read_id << "\t" << seg.adapter_id << "\t"
                              << seg.start << "\t" << seg.end << "\t" << seg.strand << "\n";
                 local_segments++;
@@ -321,7 +321,7 @@ string process_fastq(string fastq_path,
                      vector<pair<string, string>>& adapters,
                      double threshold,
                      unsigned int thread_count,
-                     string output_path) 
+                     string output_path)
 {
     // ===== 1. 预计算文件偏移量 =====
     vector<streampos> read_offsets;
@@ -329,7 +329,7 @@ string process_fastq(string fastq_path,
         ifstream in_file(fastq_path);
         string line;
         streampos pos = in_file.tellg();
-        
+
         while (getline(in_file, line)) {
             if (!line.empty() && line[0] == '@') {
                 read_offsets.push_back(pos);
@@ -346,7 +346,7 @@ string process_fastq(string fastq_path,
     const size_t chunk_size = total_reads / thread_count;
     size_t remaining = total_reads % thread_count;
     size_t start_idx = 0;
-    
+
     for (size_t i = 0; i < thread_count; ++i) {
         size_t end_idx = start_idx + chunk_size + (i < remaining ? 1 : 0);
         chunks.emplace_back(start_idx, end_idx);
@@ -370,7 +370,7 @@ string process_fastq(string fastq_path,
     for (size_t tid = 0; tid < thread_count; ++tid) {
         workers.emplace_back([&, tid] {
             size_t local_segments = 0;  // 线程局部变量
-            
+
             handle_fastq_chunk(
                 fastq_path,
                 adapters,
@@ -382,7 +382,7 @@ string process_fastq(string fastq_path,
                 local_segments,
                 read_offsets
             );
-            
+
             segment_counts[tid] = local_segments;
         });
     }
@@ -397,7 +397,7 @@ string process_fastq(string fastq_path,
     ofstream final_summary(output_path + ".summary.tsv");
     // char merge_buffer[1024 * 1024];  // 1MB合并缓冲区
     // final_out.rdbuf()->pubsetbuf(merge_buffer, sizeof(merge_buffer));
-    
+
     for (size_t i = 0; i < thread_count; ++i) {
         total_segments = total_segments + segment_counts[i];
         // 合并主输出
@@ -405,7 +405,7 @@ string process_fastq(string fastq_path,
         final_out << part_out.rdbuf();
         part_out.close();
         remove(tmp_outputs[i].c_str());
-        
+
         // 合并摘要
         ifstream part_summary(tmp_summaries[i]);
         final_summary << part_summary.rdbuf();
@@ -415,7 +415,7 @@ string process_fastq(string fastq_path,
     final_out.close();
     final_summary.close();
     // ===== 6. 生成统计摘要 =====
-    return "Total reads: " + to_string(total_reads) + 
+    return "Total reads: " + to_string(total_reads) +
            "\tProcessed segments: " + to_string(total_segments) + "\n";
 }
 
@@ -423,9 +423,9 @@ string process_fastq_old(const string& fastq_path,
                  const vector<pair<string, string>>& adapters,
                  double threshold,
                  unsigned int thread_count,
-                 const string& output_path) 
+                 const string& output_path)
 {
-    
+
     // 线程共享资源
     queue<ReadData> read_queue;
     mutex queue_mutex;
@@ -444,9 +444,9 @@ string process_fastq_old(const string& fastq_path,
         while(true) {
             unique_lock<mutex> lock(queue_mutex);
             cv.wait(lock, [&]{ return !read_queue.empty() || done_reading; });
-            
+
             if(read_queue.empty() && done_reading) return;
-            
+
             if(!read_queue.empty()) {
                 ReadData data = read_queue.front();
                 read_queue.pop();
@@ -477,7 +477,7 @@ string process_fastq_old(const string& fastq_path,
                             subseq = data.sequence.substr(start_idx, length+extendlen);
                             subqual = data.quality.substr(start_idx, length+extendlen);
                         }
-                        
+
                         if(seg.strand == "-") {
                             int extendlen = std::min(20, start_idx);
                             subseq = data.sequence.substr(start_idx-extendlen, length+ extendlen);
@@ -485,11 +485,11 @@ string process_fastq_old(const string& fastq_path,
                             subseq = reverse_complement(subseq);
                             reverse(subqual.begin(), subqual.end());
                         }
-                        
+
                         out_file << "@" << seg.read_id << "|" << seg.adapter_id << "|"
                                 << seg.start << "-" << seg.end << "(" << seg.strand << ")\n"
                                 << subseq << "\n+\n" << subqual << "\n";
-                        
+
                         out_summary << seg.read_id << "\t" << seg.adapter_id << "\t"
                                   << seg.start << "\t" << seg.end << "\t" << seg.strand << "\n";
                         segment_counter++;
@@ -510,10 +510,10 @@ string process_fastq_old(const string& fastq_path,
     string line;
     while(getline(in_file, line)) {
         if(line.empty()) continue;
-        
+
         ReadData data;
         data.header = "process_" + to_string(++read_counter);
-        
+
         // 读取序列
         getline(in_file, data.sequence);
         while(in_file.peek() != '+' && in_file.peek() != EOF) {
@@ -521,10 +521,10 @@ string process_fastq_old(const string& fastq_path,
             getline(in_file, append_seq);
             data.sequence += append_seq;
         }
-        
+
         // 跳过+
         in_file.ignore(numeric_limits<streamsize>::max(), '\n');
-        
+
         // 读取质量
         getline(in_file, data.quality);
         while(in_file.peek() != '@' && in_file.peek() != EOF) {
@@ -532,7 +532,7 @@ string process_fastq_old(const string& fastq_path,
             getline(in_file, append_qual);
             data.quality += append_qual;
         }
-        
+
         // 加入队列
         {
             lock_guard<mutex> lock(queue_mutex);
@@ -558,17 +558,71 @@ string process_fastq_old(const string& fastq_path,
     return summary;
 }
 
+vector<string> load_fasta_sequences(const string& fasta_path) {
+    vector<string> sequences;
+    if (fasta_path.empty()) {
+        return sequences; // 路径为空时返回空向量
+    }
+
+    ifstream file(fasta_path);
+    if (!file.is_open()) {
+        std::cerr << "警告：无法打开锚点序列文件: " << fasta_path << endl;
+        return sequences;
+    }
+
+    string current_sequence;
+    string line;
+
+    while (getline(file, line)) {
+        if (line.empty()) continue; // 跳过空行
+
+        if (line[0] == '>') { // 遇到新序列头
+            if (!current_sequence.empty()) {
+                sequences.push_back(current_sequence);
+                current_sequence.clear();
+            }
+        } else { // 序列行
+            // 移除非字母字符并转换为大写
+            for (char c : line) {
+                if (isalpha(c)) {
+                    current_sequence += toupper(c);
+                }
+            }
+        }
+    }
+
+    // 添加最后一个序列
+    if (!current_sequence.empty()) {
+        sequences.push_back(current_sequence);
+    }
+
+    return sequences;
+}
 
 
 string fastq_segment_main(const string& fastq_path,
     const string& adapter_path,
+    const string& anchor_path, // 新增锚点序列路径参数
     double threshold,
     unsigned int thread_count,
     const string& output_path) {
     auto adapters = load_adapters(adapter_path);
     // 添加锚点序列
-    string anchor_prr = "CTGATAAGGTCGCCATGCCT";
-    string anchor_flw = "TCTGCTGACGTACTGAGAGGCG";
+    // string anchor_prr = "CTGATAAGGTCGCCATGCCT";
+    // string anchor_flw = "TCTGCTGACGTACTGAGAGGCG";
+    // 从FASTA文件加载锚点序列
+    auto anchor_seqs = load_fasta_sequences(anchor_path);
+
+    // 设置锚点序列（根据文件内容动态确定）
+    string anchor_prr = "";
+    string anchor_flw = "";
+
+    if (!anchor_seqs.empty()) {
+        anchor_prr = anchor_seqs[0]; // 第一条序列作为前缀锚点
+
+        // 如果有第二条序列作为后缀锚点，否则使用前缀锚点
+        anchor_flw = (anchor_seqs.size() > 1) ? anchor_seqs[1] : anchor_seqs[0];
+    }
 
     for(size_t i = 0; i < adapters.size(); ++i) {
         string& seq = adapters[i].second;

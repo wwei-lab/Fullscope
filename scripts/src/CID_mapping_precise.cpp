@@ -21,7 +21,7 @@ size_t hitcount = 0;
 struct SeqInfo {
     uint32_t xpos;        // 使用位域压缩坐标（支持131071坐标范围）
     uint32_t ypos;
-    
+
     template<class Archive>
     void serialize(Archive& ar) {
         ar(xpos, ypos);
@@ -97,14 +97,14 @@ uint64_t encode_sequence(const string& sequence) {
 string decode_sequence(uint64_t encoded_seq) {
     string decoded;
     decoded.reserve(25);  // 预分配25个字符空间
-    
+
     // 从最高有效位开始解码
     uint64_t mask = 0xC000000000000000;  // 二进制11000000...（用于提取最高2位）
-    
+
     for (int i = 0; i < 25; ++i) {
         // 提取当前最高2位
         uint8_t bits = (encoded_seq & mask) >> (62 - i*2);
-        
+
         // 转换为碱基字符
         switch(bits) {
             case 0b00: decoded += 'A'; break;
@@ -112,11 +112,11 @@ string decode_sequence(uint64_t encoded_seq) {
             case 0b10: decoded += 'C'; break;
             case 0b11: decoded += 'G'; break;
         }
-        
+
         // 更新掩码处理下个2位
         mask >>= 2;
     }
-    
+
     return decoded;
 }
 
@@ -158,7 +158,7 @@ vector<string> generate_candidates(const string& query) {
 void loadQueryReads(string readFile, vector<ReadInfo>& readsInfols) {
     ifstream inFile(readFile);
     if (!inFile) {
-        cerr << "Error: failed to open " << readFile << endl;
+        std::cerr << "Error: failed to open " << readFile << endl;
         exit(EXIT_FAILURE);
     }
 
@@ -183,7 +183,7 @@ void loadQueryReads(string readFile, vector<ReadInfo>& readsInfols) {
 void matchCidChunk(vector<ReadInfo>& readsInfols,
     ofstream& outputFile, int start, int end, mutex& mtx) {
     vector<string> outputBuffer;
-    const size_t bufferSize = 1000; 
+    const size_t bufferSize = 1000;
     size_t hitcounti = 0;
     for (int i = start; i <= end; i++) {
         string seqi = readsInfols[i].seq;
@@ -213,7 +213,7 @@ void matchCidChunk(vector<ReadInfo>& readsInfols,
             if(sub_it != sub_buckets.end()){
                 auto &seqInfo = sub_it->second;
                 resPos = to_string(seqInfo.xpos) + "_" + to_string(seqInfo.ypos);
-                outputBuffer.emplace_back(readid + "\t" + resPos + "\t" + seqi + "\t0\t" + "*" + "\t" + 
+                outputBuffer.emplace_back(readid + "\t" + resPos + "\t" + seqi + "\t0\t" + "*" + "\t" +
                 "*" + "\t" + strand);
                 hitcounti++;
                 continue;
@@ -239,7 +239,7 @@ void matchCidChunk(vector<ReadInfo>& readsInfols,
             }else{
                 auto &seqInfo = sub_it->second;
                 resPos = to_string(seqInfo.xpos) + "_" + to_string(seqInfo.ypos);
-                outputBuffer.emplace_back(readid + "\t" + resPos + "\t" + candidate + "\t1\t" + "*" + "\t" + 
+                outputBuffer.emplace_back(readid + "\t" + resPos + "\t" + candidate + "\t1\t" + "*" + "\t" +
                 "*" + "\t" + strand);
                 hitcounti++;
                 break;
@@ -281,7 +281,7 @@ string matchCidThread(vector<ReadInfo>& readsInfols,
     for (auto& t : threads) {
         t.join();
     }
-    
+
     double ratio = hitcount/n_records * 100;
     string summary = "Total sequences: " + to_string(n_records) + "\t" + "Passed sequences: " + to_string(hitcount) + "\tPassed ratio: " + to_string(ratio) + "%\n";
     return summary;

@@ -1,0 +1,23 @@
+# Kept for compatibility with the original toolkit layout.
+# The canonical environment file is ../../environment.yml.
+name: fullscope
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - cxx-compiler
+  - cmake>=3.16
+  - ninja
+  - pkg-config
+  - seqan3
+  - cereal
+  - htslib
+  - minimap2
+  - samtools
+  - bedtools
+  - r-base>=4.3
+  - r-data.table
+  - r-dplyr
+  - r-qs
+  - bioconductor-rtracklayer
+  - bioconductor-bambu

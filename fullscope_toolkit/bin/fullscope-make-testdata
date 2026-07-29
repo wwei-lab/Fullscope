@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -x "${SCRIPT_DIR}/../share/fullscope/scripts/fullscope_make_testdata.sh" ]]; then
+    TOOLKIT_ROOT="${SCRIPT_DIR}/../share/fullscope"
+else
+    TOOLKIT_ROOT="${SCRIPT_DIR}/.."
+fi
+exec "${TOOLKIT_ROOT}/scripts/fullscope_make_testdata.sh" "$@"

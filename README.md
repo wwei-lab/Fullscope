@@ -1,139 +1,341 @@
-# Fullscope-seq  
-**A C++ toolset for  long-read spatial transcriptomic data (Stereo-seq with ONT/Pacbio/Cyclone): from raw FASTQ to CID mapping in one command.**
+# Fullscope
 
----
+Fullscope is the reference software for **Fullscope-seq**, a full-length,
+single-molecule, large-field-of-view spatial transcriptomics method. The
+software processes Stereo-seq-compatible long-read data from concatenated
+cDNA segmentation through spatial CID assignment and optional transcript
+annotation.
 
-##  Overview  
-Fullscope-seq is a high-performance pipeline that turns **Stereo-seq long-read spatial transcriptomic FASTQ** into **cell-resolution CID maps**.  
-Everything is written in C++17 and engineered for Linux servers with ≥32 GB RAM.
+Associated paper:
 
----
-<img width="1946" height="1564" alt="image" src="https://github.com/user-attachments/assets/9eac6d61-a68b-4263-8ea4-cd5c2355b7ae" />
+> Liu H, Hong Y, Zhang YS, *et al.* Full-length single-cell spatial
+> transcriptomics reveals spatial and cell-type-specific transcript isoforms
+> in the primate brain. *Nature Methods* (2026).
+> [https://doi.org/10.1038/s41592-026-03174-y](https://doi.org/10.1038/s41592-026-03174-y)
 
-##  Quick Start (5 commands)
+## What is included
 
-1. Clone  
-   ```bash
-   git clone https://github.com/wwei-lab/Fullscope.git
-   cd Fullscope
-   ```
+- A C++23 core for:
+  - programmed-concatemer FASTQ segmentation;
+  - CID extraction from FASTQ or BAM;
+  - fast and precise CID-index construction;
+  - error-tolerant CID mapping.
+- Portable command-line wrappers for:
+  - FASTQ/BAM input;
+  - Stereo-seq barcode-index preparation;
+  - splice-aware alignment;
+  - optional Bambu transcript annotation;
+  - merging transcript assignments with spatial coordinates;
+  - single-sample and Slurm batch execution.
+- Small test data and a smoke test.
+- Analysis notebooks used for the associated study.
 
-2. Run the complete pipeline  
-   ```bash
-   ./Fullscope-1.0 count \
-     input.fq adapters.fa anchor.fa 0.8 \
-     genes.gtf genome.fa index.cid index_threshold.txt \
-     7 6 16 ./output sample1
-   ```
+## Workflow
 
-3. Done – results are in `output/`  
-   ```
-   output/
-   ├── Segment/           # demultiplexed reads
-   ├── Alignment/         # sorted & indexed BAM
-   ├── CIDextract/        # per-read CID tables
-   ├── CIDmap/            # CID → spatial index
-   └── sample1.summary.txt
-   ```
-
----
-
-## System Requirements
-
-| Component       | Requirement               |
-|-----------------|---------------------------|
-| OS              | Linux (kernel ≥3.10)      |
-| Compiler        | g++ ≥7 / clang++ ≥5 (C++17) |
-| Third-party     | minimap2, samtools in `$PATH` |
-| Hardware        | ≥32 GB RAM, ≥16 cores recommended |
-
----
+```text
+concatenated long-read FASTQ or BAM
+                  |
+                  v
+       cDNA segmentation (C++)
+                  |
+       +----------+-----------+
+       |                      |
+       v                      v
+CID extraction/mapping   splice-aware alignment
+       |                      |
+       |                 optional Bambu
+       +----------+-----------+
+                  |
+                  v
+ spatially resolved transcript assignments
+```
 
 ## Installation
 
-```bash
-# 1. clone
-git clone https://github.com/wwei-lab/Fullscope.git && cd Fullscope
+### Recommended: conda or mamba
 
-# 2. build (CMake ≥3.14)
-mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j$(nproc)
-# binary is now ./Fullscope-1.0
-```
-
----
-
-## Step-by-step (if you prefer modular runs)
-
-| Step | Command |
-|------|---------|
-| 1. FASTQ segmentation | `./Fullscope-1.0 process_fq input.fq adapters.fa anchor.fa 0.8 16 segmented.fq` |
-| 2. Alignment | `minimap2 -K500m --secondary=no -a -x splice --splice-flank=yes -t 16 genome.fa segmented.fq \| samtools sort -o aligned.bam` |
-| 3. CID extraction | `./Fullscope-1.0 extract aligned.bam genes.gtf extracted_cid.tsv 16` |
-| 4. CID mapping | `./Fullscope-1.0 map extracted_cid.tsv index.cid index_threshold.txt mapped_cid.tsv 16 7 6` |
-
----
-
-## Parameter Bible
-
-### `count` – single-command pipeline
-```
-./Fullscope-1.0 count \
-  <input.fq> <adapters.fa> <anchor.fa> <seg_thresh> \
-  <ref.gtf> <ref.fa> <index.cid> <index_thresh.txt> \
-  <k> <buckets> <threads> <outDir> <prefix>
-```
-
-| Param | Meaning | Example |
-|-------|---------|---------|
-| `seg_thresh` | segment confidence (0–1) | `0.8` |
-| `k` | k-mer length | `7` |
-| `buckets` | hash buckets | `6` |
-| `threads` | CPU cores | `16` |
-
----
-
-### Auxiliary tools
-
-| Tool | One-liner |
-|------|-----------|
-| `process_fq` | `./Fullscope-1.0 process_fq in.fq adapters.fa anchor.fa 0.8 16 out.fq` |
-| `extract` | `./Fullscope-1.0 extract aligned.bam genes.gtf cid.tsv 16` |
-| `extract_fq` | `./Fullscope-1.0 extract_fq in.fq cid.tsv 16` |
-| `map` | `./Fullscope-1.0 map cid.tsv index.cid thresh.txt out.tsv 16 7 6` |
-| `map_p` (precise) | `./Fullscope-1.0 map_p cid.tsv index.cid out.tsv 16 7` |
-| `build_idx` | fast: `./Fullscope-1.0 build_idx f list.txt 16 7 6 index.cid`  
-precise: `./Fullscope-1.0 build_idx p list.txt 16 7 index_precise.cid` |
-| `bamtoref` | `./Fullscope-1.0 bamtoref genes.gtf in.bam ref_list.txt out 16 T` |
-
----
-
-## Output Structure
-
-```
-output/
-├── Segment/           # demultiplexed *.fq
-├── Alignment/         # *.bam + *.bai
-├── CIDextract/        # *.cid.tsv
-├── CIDmap/            # *.mapped.cid.tsv
-└── <prefix>.summary.txt
-```
-
----
-
-## Notes & Pro-tips
-
-1. **Dependencies** – ensure `minimap2` and `samtools` are in `$PATH`.  
-2. **Memory** – 1 GB per 1 M reads is a safe rule of thumb.  
-3. **Threads** – leave 2 cores free for I/O.  
-4. **Disk** – reserve 5× the input FASTQ size for intermediates.
-
----
-
-## Help & Version
+Fullscope is supported on 64-bit Linux. The build requires a C++23 compiler,
+CMake, SeqAn3, cereal and HTSlib. The supplied environment also installs the
+command-line and R dependencies used by the complete workflow.
 
 ```bash
-./Fullscope-1.0
+git clone https://github.com/wwei-lab/Fullscope.git
+cd Fullscope
+
+mamba env create -f environment.yml
+conda activate fullscope
+
+bash install.sh --prefix "$CONDA_PREFIX"
 ```
 
+If `mamba` is unavailable, replace the first command with:
+
+```bash
+conda env create -f environment.yml
+```
+
+For segmentation, CID processing, and alignment without the optional R/Bambu
+stages, create the smaller core environment instead:
+
+```bash
+mamba env create -f environment-core.yml
+conda activate fullscope
+bash install.sh --prefix "$CONDA_PREFIX"
+```
+
+Confirm the installation:
+
+```bash
+fullscope
+fullscope-segment --help
+fullscope-ont --version
+```
+
+### Build with an existing environment
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel 8
+cmake --install build --prefix "$HOME/.local"
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+## Smoke test
+
+The bundled smoke test runs segmentation on 20 reads and does not require a
+reference genome or Stereo-seq mask:
+
+```bash
+bash tests/smoke_test.sh "$(command -v fullscope)"
+```
+
+A successful run ends with `Smoke test passed`.
+
+## Quick start
+
+### 1. Segmentation only
+
+Use this mode to validate installation or to split concatenated cDNA reads
+before downstream processing:
+
+```bash
+fullscope-segment \
+  --raw-fq reads.fastq \
+  --out results/sample_fragment.fastq \
+  --threads 8
+```
+
+The packaged adapter and anchor FASTA files are used automatically. Override
+them only when the library design differs:
+
+```bash
+fullscope-segment \
+  --raw-fq reads.fastq \
+  --out results/sample_fragment.fastq \
+  --adapter-fa custom_adapters.fa \
+  --anchor-fa custom_anchor.fa \
+  --segthreshold 0.15 \
+  --threads 8
+```
+
+### 2. Complete workflow from FASTQ
+
+Full CID-index creation requires
+[ST_BarcodeMap](https://github.com/STOmics/ST_BarcodeMap), which is maintained
+separately and is not bundled with Fullscope.
+
+```bash
+fullscope-ont \
+  --sample sample01 \
+  --outdir results/sample01 \
+  --raw-fq reads.fastq.gz \
+  --stereoindex sample01.barcodeToPos.h5 \
+  --barcode-map /path/to/ST_BarcodeMap \
+  --genome reference/genome.fa \
+  --gtf reference/genes.gtf \
+  --threads 32
+```
+
+Both uncompressed FASTQ and `.fastq.gz` input are accepted. Gzipped input is
+decompressed into the sample output directory before C++ processing.
+
+### 3. Complete workflow from BAM
+
+```bash
+fullscope-ont \
+  --sample sample01 \
+  --outdir results/sample01 \
+  --input-bam reads.bam \
+  --stereoindex sample01.barcodeToPos.h5 \
+  --barcode-map /path/to/ST_BarcodeMap \
+  --genome reference/genome.fa \
+  --gtf reference/genes.gtf \
+  --threads 32
+```
+
+### 4. Add transcript annotation and spatial merge
+
+```bash
+fullscope-ont \
+  --sample sample01 \
+  --outdir results/sample01 \
+  --raw-fq reads.fastq.gz \
+  --stereoindex sample01.barcodeToPos.h5 \
+  --barcode-map /path/to/ST_BarcodeMap \
+  --genome reference/genome.fa \
+  --gtf reference/genes.gtf \
+  --run-bambu \
+  --merge-annot \
+  --threads 32
+```
+
+## Configuration
+
+For repeated runs, copy the portable example and fill in local reference paths:
+
+```bash
+cp fullscope_toolkit/config/config.example.env site.env
+```
+
+Then run:
+
+```bash
+fullscope-ont \
+  --config-env site.env \
+  --sample sample01 \
+  --outdir results/sample01 \
+  --raw-fq reads.fastq.gz \
+  --stereoindex sample01.barcodeToPos.h5
+```
+
+Command-line flags take precedence over values loaded from the configuration
+file.
+
+## Main workflow options
+
+| Option | Description |
+|---|---|
+| `--sample NAME` | Sample identifier; required. |
+| `--outdir PATH` | Sample output directory; required. |
+| `--raw-fq PATH` | Input FASTQ or FASTQ.GZ. |
+| `--input-bam PATH` | Input BAM; used when FASTQ is not supplied. |
+| `--stereoindex PATH` | Stereo-seq `barcodeToPos.h5` mask. |
+| `--genome PATH` | Reference genome FASTA. |
+| `--gtf PATH` | Gene annotation GTF. |
+| `--barcode-map PATH` | ST_BarcodeMap executable. |
+| `--threads N` | Worker threads; default is 32 or `SLURM_CPUS_PER_TASK`. |
+| `--segthreshold X` | Segmentation error threshold; default is 0.15. |
+| `--adapter-fa PATH` | Override the packaged adapter FASTA. |
+| `--anchor-fa PATH` | Override the packaged anchor FASTA. |
+| `--segment-only` | Stop after cDNA segmentation. |
+| `--fragment-out PATH` | Explicit segmentation output path. |
+| `--skip-index` | Reuse an existing precise CID index. |
+| `--skip-fastq` | Reuse an existing converted/decompressed FASTQ. |
+| `--run-bambu` | Run Bambu transcript annotation. |
+| `--merge-annot` | Merge Bambu assignments with spatial CID results. |
+| `--config-env PATH` | Load site-specific defaults. |
+| `--version` | Print the toolkit version. |
+
+Run `fullscope-ont --help` for the complete parser-supported interface,
+including explicit intermediate-file overrides.
+
+## Core C++ commands
+
+The installed `fullscope` executable also exposes modular commands:
+
+```text
+fullscope process_fq <input.fq> <adapters.fa> <anchor.fa> <threshold> <threads> <output.fq>
+fullscope extract <input.bam> <genes.gtf> <output.tsv> <threads>
+fullscope extract_fq <input.fq> <output.tsv> <threads>
+fullscope build_idx <f|p> <cid_list.txt> <threads> <kmer> <buckets> <output_prefix>
+fullscope map <reads.tsv> <index.cid> <thresholds.txt> <output.tsv> <threads> <kmer> <buckets>
+fullscope map_p <reads.tsv> <index.precise.bin> <output.tsv> <threads> <kmer>
+```
+
+The toolkit uses the precise `build_idx p` and `map_p` path by default.
+
+## Slurm
+
+The packaged Slurm script intentionally contains no cluster-specific partition
+or memory setting. Supply those values through `FULLSCOPE_SBATCH_ARGS`:
+
+```bash
+FULLSCOPE_SBATCH_ARGS="--partition=compute --mem=300G --cpus-per-task=32" \
+fullscope-submit \
+  --sample sample01 \
+  --outdir results/sample01 \
+  --raw-fq reads.fastq.gz \
+  --stereoindex sample01.barcodeToPos.h5 \
+  --config-env site.env
+```
+
+For multiple samples:
+
+```bash
+cp fullscope_toolkit/config/samples.example.tsv samples.tsv
+
+fullscope-batch \
+  --config-env site.env \
+  --samples samples.tsv \
+  --sbatch-extra "--partition=compute --mem=300G"
+```
+
+## Outputs
+
+A complete run creates:
+
+```text
+results/sample01/
+  Index/          CID whitelist and precise index
+  Fqsegment/      segmented full-length cDNA reads
+  CIDextract/     per-read CID candidates
+  CIDmap/         mapped spatial CIDs
+  Alignment/      splice-aware BAM and index
+  Bambu/          optional transcript assignments
+  raw_fastq/      BAM-converted or decompressed FASTQ, when needed
+  *_fsraw_merged_data.qs
+  *_fsraw_merged_data_uniquereads.qs
+```
+
+The two `.qs` matrices contain transcript/gene annotation and spatial `x`, `y`
+coordinates. They are produced only when `--run-bambu --merge-annot` is used.
+
+## Repository layout
+
+```text
+Fullscope/
+  scripts/src/                 C++ implementation
+  scripts/include/             C++ headers
+  fullscope_toolkit/
+    bin/                       user-facing command wrappers
+    scripts/                   workflow, Slurm and R scripts
+    config/                    portable configuration examples
+    refdata/                   default adapter and anchor sequences
+    testdata/                  small smoke-test FASTQ
+  tests/smoke_test.sh
+  analysis_script/             study analysis notebooks
+  Segmentation_script/         legacy segmentation workflow
+  CMakeLists.txt
+  environment.yml
+  install.sh
+```
+
+## Reuse notes
+
+- Fullscope does not bundle reference genomes, gene annotations, Stereo-seq
+  mask files or ST_BarcodeMap.
+- Memory and runtime depend on read count, CID-whitelist size, thread count and
+  the selected long-read platform. Validate a small subset before a full run.
+- The bundled smoke data validates installation and segmentation, not a
+  biological end-to-end result.
+- Preserve the editable configuration used for each run and record the
+  Fullscope version with `fullscope-ont --version`.
+
+## Archived version
+
+The code associated with the publication is archived at
+[Zenodo](https://doi.org/10.5281/zenodo.19647550).
+
+## License
+
+Fullscope is distributed under the [Apache License 2.0](LICENSE).

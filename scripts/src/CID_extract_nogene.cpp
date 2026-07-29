@@ -48,7 +48,7 @@ std::string CidExtractPairwiseAlignKmer(std::string sequence, Config& config, st
     unordered_map<string, vector<int>> kmer_index_rc = build_kmer_index(rc_seq);
 
     // 3. 锚点比对函数（k-mer优化版）
-    auto align_anchor = [&](const string& anchor, const string& target, 
+    auto align_anchor = [&](const string& anchor, const string& target,
                             const unordered_map<string, vector<int>>& index) -> pair<int, int> {
         const int L = anchor.length();
         const int max_ed = error_count;
@@ -90,9 +90,9 @@ std::string CidExtractPairwiseAlignKmer(std::string sequence, Config& config, st
 
     // 5. 判断命中逻辑（同原函数）
     int minscore = anchors[0].size() - error_count;
-    bool fwd_hit = (left_dist <= error_count || right_dist <= error_count) && 
+    bool fwd_hit = (left_dist <= error_count || right_dist <= error_count) &&
                   (left_rc_dist > error_count && right_rc_dist > error_count);
-    bool rev_hit = (left_rc_dist <= error_count || right_rc_dist <= error_count) && 
+    bool rev_hit = (left_rc_dist <= error_count || right_rc_dist <= error_count) &&
                   (left_dist > error_count && right_dist > error_count);
 
     // 6. 提取CID
@@ -134,7 +134,7 @@ std::string CidExtractPairwiseAlign(std::string sequence, Config& config, string
     auto method = seqan3::align_cfg::method_local{};
     seqan3::align_cfg::scoring_scheme scheme{ seqan3::nucleotide_scoring_scheme{seqan3::match_score{1}, seqan3::mismatch_score{-1}} };
     seqan3::align_cfg::gap_cost_affine gap_costs{ seqan3::align_cfg::open_score{0}, seqan3::align_cfg::extension_score{-1} };
-    auto aligncfg = method | scheme | gap_costs;    
+    auto aligncfg = method | scheme | gap_costs;
     auto seq_dna5 = seq | seqan3::views::char_to<seqan3::dna5>;
     auto seq_rc_dna5 = rc_seq | seqan3::views::char_to<seqan3::dna5>;
 
@@ -196,7 +196,7 @@ std::string CidExtractPairwiseAlign(std::string sequence, Config& config, string
 vector<streampos> get_fastq_offsets(const string& fastq_path) {
     ifstream inFile(fastq_path);
     if (!inFile) {
-        cerr << "Error opening file: " << fastq_path << endl;
+        std::cerr << "Error opening file: " << fastq_path << endl;
         return {};
     }
 
@@ -217,12 +217,12 @@ vector<streampos> get_fastq_offsets(const string& fastq_path) {
 
         // 阶段2：跳过完整记录
         string seq_line, plus_line, qual_line;
-        if (!getline(inFile, seq_line) || 
-            !getline(inFile, plus_line) || 
+        if (!getline(inFile, seq_line) ||
+            !getline(inFile, plus_line) ||
             !getline(inFile, qual_line)) {
             break;
         }
-        
+
         // 更新位置
         pos = inFile.tellg();
     }
@@ -235,21 +235,21 @@ struct FastqRecord {
     string seq;
 };
 
-void handleFastqChunk(const string& fastqFile, 
+void handleFastqChunk(const string& fastqFile,
                      const vector<streampos>& read_offsets,
                      uint64_t start_idx, uint64_t end_idx,
-                     Config& config, const string& tmpOutputPath, 
+                     Config& config, const string& tmpOutputPath,
                      uint64_t& local_processed, uint64_t& local_cid_count) {
-    
+
     ifstream inFile(fastqFile);
     if (!inFile) {
-        cerr << "Error opening file: " << fastqFile << endl;
+        std::cerr << "Error opening file: " << fastqFile << endl;
         return;
     }
 
     ofstream outFile(tmpOutputPath);
     if (!outFile) {
-        cerr << "Error opening temp output: " << tmpOutputPath << endl;
+        std::cerr << "Error opening temp output: " << tmpOutputPath << endl;
         return;
     }
 
@@ -264,7 +264,7 @@ void handleFastqChunk(const string& fastqFile,
     for (uint64_t idx = start_idx; idx < end_idx; ++idx) {
         inFile.clear(); // 清除可能的EOF标志
         inFile.seekg(read_offsets[idx]);
-        
+
         string header, sequence, plus, quality;
         if (!getline(inFile, header)) break;
         if (!getline(inFile, sequence)) break;
@@ -289,8 +289,8 @@ void handleFastqChunk(const string& fastqFile,
 
         // // 定期输出进度
         // if (local_processed % 10000 == 0) {
-        //     cout << "Thread [" << this_thread::get_id() 
-        //          << "] processed " << local_processed 
+        //     cout << "Thread [" << this_thread::get_id()
+        //          << "] processed " << local_processed
         //          << " records" << endl;
         // }
     }
@@ -322,7 +322,7 @@ string extractcid_fastq(const string& fastq_path,
     if (read_offsets.empty()) {
         return "Error: Failed to compute record offsets";
     }
-    
+
     size_t total_records = read_offsets.size();
     cout << "Found " << total_records << " records in " << fastq_path << endl;
 
@@ -331,7 +331,7 @@ string extractcid_fastq(const string& fastq_path,
     const size_t chunk_size = total_records / config.num_threads;
     size_t remaining = total_records % config.num_threads;
     size_t start_idx = 0;
-    
+
     for (size_t i = 0; i < config.num_threads; ++i) {
         size_t end_idx = start_idx + chunk_size + (i < remaining ? 1 : 0);
         chunks.emplace_back(start_idx, end_idx);
@@ -352,7 +352,7 @@ string extractcid_fastq(const string& fastq_path,
     cout << "Starting parallel processing with " << config.num_threads << " threads..." << endl;
     for (size_t tid = 0; tid < config.num_threads; ++tid) {
         workers.emplace_back(
-            handleFastqChunk, 
+            handleFastqChunk,
             cref(fastq_path),
             cref(read_offsets),
             chunks[tid].first,
@@ -377,12 +377,12 @@ string extractcid_fastq(const string& fastq_path,
     total_processed = accumulate(chunk_processed.begin(), chunk_processed.end(), 0ULL);
     valid_cid_count = accumulate(chunk_cid_count.begin(), chunk_cid_count.end(), 0ULL);
 
-    string summary = "Total processed sequences: " + to_string(total_processed) 
+    string summary = "Total processed sequences: " + to_string(total_processed)
                    + "\tValid CID counts: " + to_string(valid_cid_count) + "\n";
-    
+
     // 释放偏移量向量内存
     vector<streampos>().swap(read_offsets);
-    
+
     return summary;
 }
 

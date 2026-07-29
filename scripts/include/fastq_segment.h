@@ -76,6 +76,7 @@ std::vector<std::pair<std::string, std::string>> load_adapters(const std::string
 void precompute_rc(const std::vector<std::pair<std::string, std::string>>& adapters);
 string fastq_segment_main(const string& fastq_path,
     const string& adapter_path,
+    const string& anchor_path, // 新增锚点序列路径参数
     double threshold,
     unsigned int thread_count,
     const string& output_path);

@@ -18,8 +18,8 @@ namespace CIDindexPrecise {
 constexpr size_t SHARD_COUNT = 64;
 size_t KMERLEN = 6;
 size_t BUCKETNUM = 6;
-const int K = 25; 
-const int BITS_PER_BASE = 2; 
+const int K = 25;
+const int BITS_PER_BASE = 2;
 
 #pragma pack(push, 1)
 struct SeqInfo {
@@ -100,7 +100,7 @@ uint64_t encode_sequence(const string& sequence) {
 }
 
 void index_process_chunk(string tableFile, uint64_t start_line, uint64_t end_line) {
-    
+
     ifstream inFile(tableFile);
     string line;
     uint64_t current_line = 0;
@@ -134,7 +134,7 @@ void index_process_chunk(string tableFile, uint64_t start_line, uint64_t end_lin
             xpos = stoul(columns[1]);
             ypos = stoul(columns[2]);
         } catch (const exception& e) {
-            cerr << "Error parsing coordinates: " << line << endl;
+            std::cerr << "Error parsing coordinates: " << line << endl;
             continue;
         }
 
@@ -161,12 +161,12 @@ void build_index_precise(string tableFile, int kmerlen, int numThreads, string o
 
     cout << "Building index from table..." << endl;
     ifstream inFile(tableFile);
-    uint64_t total_lines = count(istreambuf_iterator<char>(inFile), 
+    uint64_t total_lines = count(istreambuf_iterator<char>(inFile),
                                 istreambuf_iterator<char>(), '\n');
     inFile.close();
     vector<thread> workers;
     uint64_t chunk_size = total_lines / numThreads;
-    
+
     for (int i = 0; i < numThreads; ++i) {
         workers.emplace_back([=] {
             index_process_chunk(tableFile, i*chunk_size, (i+1)*chunk_size);

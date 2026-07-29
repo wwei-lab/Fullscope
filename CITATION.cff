@@ -1,10 +1,31 @@
-cff-version: 1.1.0
-message: "If you use this software, please cite it as below."
+cff-version: 1.2.0
+message: "If you use Fullscope, please cite the associated Nature Methods article."
+title: "Fullscope: full-length single-cell spatial transcriptomics software"
+version: 1.1.0
+date-released: 2026-07-29
+license: Apache-2.0
+repository-code: "https://github.com/wwei-lab/Fullscope"
 authors:
-- family-names: Hengxin
-  given-names: Liu
-orcid: https://orcid.org/0000-0002-8994-5494
-title:wwei-lab/Fullscope: Frozen Code for Fullscope-seq paper
-version: V1.0
-date-released: 2026-04-19
-                                
+  - family-names: Liu
+    given-names: Hengxin
+    orcid: "https://orcid.org/0000-0002-8994-5494"
+  - family-names: Wei
+    given-names: Wu
+    orcid: "https://orcid.org/0000-0001-5643-8739"
+preferred-citation:
+  type: article
+  title: "Full-length single-cell spatial transcriptomics reveals spatial and cell-type-specific transcript isoforms in the primate brain"
+  authors:
+    - family-names: Liu
+      given-names: Hengxin
+    - family-names: Hong
+      given-names: Yanhong
+    - family-names: Zhang
+      given-names: Yao Santo
+    - family-names: Wei
+      given-names: Wu
+  journal: Nature Methods
+  year: 2026
+  doi: "10.1038/s41592-026-03174-y"
+  url: "https://doi.org/10.1038/s41592-026-03174-y"
+

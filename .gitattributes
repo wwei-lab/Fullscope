@@ -1,0 +1,23 @@
+* text=auto
+
+*.c text eol=lf
+*.cc text eol=lf
+*.cpp text eol=lf
+*.h text eol=lf
+*.hpp text eol=lf
+*.sh text eol=lf
+*.R text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.cff text eol=lf
+*.fa text eol=lf
+
+*.bam binary
+*.gz binary
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.tif binary
+*.tiff binary
+*.zip binary

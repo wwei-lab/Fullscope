@@ -17,13 +17,13 @@ namespace CIDExtractFastq {
 
 struct Config {
     std::vector<std::string> anchor_seqs {
-        //"ATGGCGACCTTATCAG", 
+        //"ATGGCGACCTTATCAG",
         //"TTGTCTTCCTAAGACCG"
-        "CGGTCTTAGGAAGACAA",
+        "GTCTTAGGAAGACAA",
         "CTGATAAGGTCGCCAT"
-        
+
     };
-    
+
     std::vector<int> width_params {20, 30, 25};
     int error_threshold = 5;
     int num_threads = 4;

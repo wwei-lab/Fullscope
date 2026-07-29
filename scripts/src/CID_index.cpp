@@ -15,8 +15,8 @@ namespace CIDindex {
 
 size_t KMERLEN = 6;
 size_t BUCKETNUM = 6;
-const int K = 25; 
-const int BITS_PER_BASE = 2; 
+const int K = 25;
+const int BITS_PER_BASE = 2;
 
 struct Seqinfo {
     bitset<K* BITS_PER_BASE>  encode_seqs;
@@ -92,11 +92,11 @@ bitset<K* BITS_PER_BASE> encode_sequence(const string& sequence) {
     return encoded_seq;
 }
 
-void gene_index_precess_chunk(string tableFile, uint64_t start_line, uint64_t end_line, 
+void gene_index_precess_chunk(string tableFile, uint64_t start_line, uint64_t end_line,
     map<string, map<uint8_t, map<uint32_t, vector<pair<uint32_t, uint8_t>>>>>& TotalBuckets,
     map <string, map<uint32_t, Seqinfo>>& seqBuckets,
     mutex& mtx) {
-    
+
     ifstream inFile(tableFile);
     string line;
     uint64_t current_line = 0;
@@ -120,7 +120,7 @@ void gene_index_precess_chunk(string tableFile, uint64_t start_line, uint64_t en
         }
 
         if (columns.size() < 4) {
-            cerr << "Invalid line format: " << line << endl;
+            std::cerr << "Invalid line format: " << line << endl;
             continue;
         }
 
@@ -130,7 +130,7 @@ void gene_index_precess_chunk(string tableFile, uint64_t start_line, uint64_t en
             xpos = stoul(columns[1]);
             ypos = stoul(columns[2]);
         } catch (const exception& e) {
-            cerr << "Error parsing coordinates: " << line << endl;
+            std::cerr << "Error parsing coordinates: " << line << endl;
             continue;
         }
 
@@ -159,7 +159,7 @@ void gene_index_precess_chunk(string tableFile, uint64_t start_line, uint64_t en
                 for (auto& [s, inner_map] : bucketi) {
                     for (auto& [hashMin, vec] : inner_map) {
                         TotalBuckets[gene][s][hashMin].insert(
-                            TotalBuckets[gene][s][hashMin].end(), 
+                            TotalBuckets[gene][s][hashMin].end(),
                             vec.begin(), vec.end()
                         );
                     }
@@ -174,10 +174,10 @@ void gene_index_precess_chunk(string tableFile, uint64_t start_line, uint64_t en
 void gene_index_process(string tableFile, int numThreads,
     map<string, map<uint8_t, map<uint32_t, vector<pair<uint32_t, uint8_t>>>>>& TotalBuckets,
     map <string, map<uint32_t, Seqinfo>>& seqBuckets) {
-    
+
     mutex mtx;
     ifstream inFile(tableFile);
-    uint64_t total_lines = count(istreambuf_iterator<char>(inFile), 
+    uint64_t total_lines = count(istreambuf_iterator<char>(inFile),
                                 istreambuf_iterator<char>(), '\n');
     inFile.close();
 
@@ -188,7 +188,7 @@ void gene_index_process(string tableFile, int numThreads,
     for (int i = 0; i < numThreads; ++i) {
         uint64_t start = i * chunk_size;
         uint64_t end = (i == numThreads-1) ? total_lines : start + chunk_size;
-        threads.emplace_back(gene_index_precess_chunk, 
+        threads.emplace_back(gene_index_precess_chunk,
                             tableFile, start, end,
                             ref(TotalBuckets), ref(seqBuckets), ref(mtx));
     }
@@ -216,7 +216,7 @@ int calculate_edit_threshold(int N) {
 void build_index(string tableFile, int kmerlen, int bucketnum, int numThreads, string outFold) {
     KMERLEN = kmerlen;
     BUCKETNUM = bucketnum;
-    
+
     map<string, map<uint8_t, map<uint32_t, vector<pair<uint32_t, uint8_t>>>>> TotalBuckets;
     map <string, map<uint32_t, Seqinfo>> seqBuckets;
 
@@ -235,7 +235,7 @@ void build_index(string tableFile, int kmerlen, int bucketnum, int numThreads, s
     string thresholdFile = outFold + "_thresholds.tsv";
     ofstream thresholdStream(thresholdFile);
     if (!thresholdStream) {
-        cerr << "Error opening threshold table file: " << thresholdFile << endl;
+        std::cerr << "Error opening threshold table file: " << thresholdFile << endl;
         return;
     }
     // 写入表头

@@ -1,0 +1,15 @@
+name: fullscope
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - cxx-compiler
+  - cmake>=3.16
+  - ninja
+  - pkg-config
+  - seqan3
+  - cereal
+  - htslib
+  - minimap2
+  - samtools
+  - bedtools

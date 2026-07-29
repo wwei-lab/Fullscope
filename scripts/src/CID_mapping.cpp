@@ -104,7 +104,7 @@ void loadNanoReads(string readFile, vector<ReadInfo>& readsInfols,
     vector<string>& genels) {
     ifstream inFile(readFile);
     if (!inFile) {
-        cerr << "Error: failed to open " << readFile << endl;
+        std::cerr << "Error: failed to open " << readFile << endl;
         exit(EXIT_FAILURE);
     }
 
@@ -153,13 +153,13 @@ int pairwiseAlign(string seq1, string seq2) {
 
 void matchCidChunk(vector<ReadInfo>& readsInfols,
     map<string, map<uint8_t, map<uint32_t, vector<pair<uint32_t, uint8_t>>>>>& TotalBuckets,
-    map<string, map<uint32_t, Seqinfo>>& seqBuckets, 
+    map<string, map<uint32_t, Seqinfo>>& seqBuckets,
     unordered_map<string, int>& gene_threshold_map,
-    ofstream& outputFile, int start, int end, 
+    ofstream& outputFile, int start, int end,
     mutex& mtx) {
     size_t hitcount = 0;
     vector<string> outputBuffer;
-    const size_t bufferSize = 10000; 
+    const size_t bufferSize = 10000;
 
     //cout << "processing" << endl;
     for (int i = start; i <= end; i++) {
@@ -192,7 +192,7 @@ void matchCidChunk(vector<ReadInfo>& readsInfols,
                 resPos = to_string(seqinfoi.xpos) + "_" + to_string(seqinfoi.ypos);
                 auto endTime = std::chrono::steady_clock::now();
                 std::chrono::duration<double> duration = endTime - startTime;
-                outputBuffer.emplace_back(readid + "\t" + resPos + "\t" + seqi + "\t0\t" + to_string(ref_threshold) + "\t" + 
+                outputBuffer.emplace_back(readid + "\t" + resPos + "\t" + seqi + "\t0\t" + to_string(ref_threshold) + "\t" +
                 genei + "\t" + strand + "\t" + to_string(duration.count()) + "\t0\t0");
 
                 continue;
@@ -250,10 +250,10 @@ void matchCidChunk(vector<ReadInfo>& readsInfols,
                 auto endTime = std::chrono::steady_clock::now();
                 std::chrono::duration<double> duration = endTime - startTime;
                 hitcount++;
-                outputBuffer.emplace_back(readid + "\t" + resPos + "\t" + resSeq + "\t" + to_string(mindistance) + "\t" + to_string(ref_threshold) + 
+                outputBuffer.emplace_back(readid + "\t" + resPos + "\t" + resSeq + "\t" + to_string(mindistance) + "\t" + to_string(ref_threshold) +
                 "\t" + genei + "\t" + strand + "\t" + to_string(duration.count()) + "\t" + to_string(durationkmer.count()) + "\t" + to_string(kmerMap.size()));
             }
-            
+
         }
 
         if (outputBuffer.size() >= bufferSize) {
@@ -309,7 +309,7 @@ string filterResults(const string& inputFile, const string& outputFile) {
     ifstream in(inputFile);
     ofstream out(outputFile);
     string line;
-    
+
     // 读取并写入标题行
     getline(in, line);
     out << line << "\n";
@@ -323,14 +323,14 @@ string filterResults(const string& inputFile, const string& outputFile) {
         vector<string> fields;
         string field;
         istringstream iss(line);
-        
+
         // 解析TSV字段
         while (getline(iss, field, '\t')) {
             fields.push_back(field);
         }
 
         if (fields.size() < 10) {
-            cerr << "Invalid line format: " << line << endl;
+            std::cerr << "Invalid line format: " << line << endl;
             continue;
         }
 
@@ -339,7 +339,7 @@ string filterResults(const string& inputFile, const string& outputFile) {
             editDi = stoi(fields[4]);
             editDi_ref = stoi(fields[5]);
         } catch (...) {
-            cerr << "Error parsing numbers in line: " << line << endl;
+            std::cerr << "Error parsing numbers in line: " << line << endl;
             continue;
         }
 
@@ -349,7 +349,7 @@ string filterResults(const string& inputFile, const string& outputFile) {
         if (editDi <= editDi_ref) {
             passed++;
             buffer.push_back(line);
-            
+
             // 缓冲写入
             if (buffer.size() >= bufferSize) {
                 for (const auto& l : buffer) out << l << "\n";

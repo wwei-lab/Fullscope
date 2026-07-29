@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -x "${SCRIPT_DIR}/../share/fullscope/scripts/run_fullscope_ont_pipeline.slurm" ]]; then
+    TOOLKIT_ROOT="${SCRIPT_DIR}/../share/fullscope"
+else
+    TOOLKIT_ROOT="${SCRIPT_DIR}/.."
+fi
+command -v sbatch >/dev/null 2>&1 || { echo "ERROR: sbatch is not available in PATH." >&2; exit 1; }
+sbatch_args=()
+if [[ -n "${FULLSCOPE_SBATCH_ARGS:-}" ]]; then
+    # shellcheck disable=SC2206
+    sbatch_args=(${FULLSCOPE_SBATCH_ARGS})
+fi
+exec sbatch "${sbatch_args[@]}" "${TOOLKIT_ROOT}/scripts/run_fullscope_ont_pipeline.slurm" "$@"

@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "${SCRIPT_DIR}/../share/fullscope/scripts/fs_merge_spatial_transcripts.R" ]]; then
+    TOOLKIT_ROOT="${SCRIPT_DIR}/../share/fullscope"
+else
+    TOOLKIT_ROOT="${SCRIPT_DIR}/.."
+fi
+RSCRIPT_BIN="${RSCRIPT_BIN:-$(command -v Rscript || true)}"
+[[ -n "${RSCRIPT_BIN}" ]] || { echo "ERROR: Rscript is not available in PATH." >&2; exit 1; }
+exec "${RSCRIPT_BIN}" "${TOOLKIT_ROOT}/scripts/fs_merge_spatial_transcripts.R" "$@"
