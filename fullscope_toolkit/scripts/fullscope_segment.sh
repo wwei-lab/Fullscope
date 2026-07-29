@@ -19,12 +19,11 @@ Optional:
   --segthreshold FLOAT  Default: 0.15
   --adapter-fa PATH     Override built-in adapter FASTA
   --anchor-fa PATH      Override built-in anchor FASTA
-  --fullscope-bin PATH  Override Fullscope binary path
   --config-env PATH     Source site/local env config before resolving defaults
   --version             Print toolkit version and exit
 
 Example:
-  fullscope-segment \
+  fullscope segment \
     --raw-fq /data/longreads/sample.fastq \
     --out /data/results/sample_fragment.fastq
 EOF
@@ -59,7 +58,7 @@ segthreshold=0.15
 
 adapter_fa="${ADAPTER_FA:-${toolkit_root}/refdata/adapters.fa}"
 anchor_fa="${ANCHOR_FA:-${toolkit_root}/refdata/anchor.fa}"
-fullscope_bin="${FULLSCOPE_BIN:-$(command -v fullscope || true)}"
+core_bin="${FULLSCOPE_CORE_BIN:-}"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -69,7 +68,7 @@ while [[ $# -gt 0 ]]; do
         --segthreshold) segthreshold="$2"; shift 2 ;;
         --adapter-fa) adapter_fa="$2"; shift 2 ;;
         --anchor-fa) anchor_fa="$2"; shift 2 ;;
-        --fullscope-bin) fullscope_bin="$2"; shift 2 ;;
+        --core-bin) core_bin="$2"; shift 2 ;;
         --config-env) config_env="$2"; shift 2 ;;
         --version)
             if [[ -f "${toolkit_version_file}" ]]; then
@@ -93,8 +92,8 @@ fi
 [[ -e "${raw_fq}" ]] || { echo "ERROR: file not found: ${raw_fq}" >&2; exit 1; }
 [[ -e "${adapter_fa}" ]] || { echo "ERROR: file not found: ${adapter_fa}" >&2; exit 1; }
 [[ -e "${anchor_fa}" ]] || { echo "ERROR: file not found: ${anchor_fa}" >&2; exit 1; }
-[[ -n "${fullscope_bin}" ]] || { echo "ERROR: fullscope is not in PATH; use --fullscope-bin." >&2; exit 1; }
-[[ -e "${fullscope_bin}" ]] || { echo "ERROR: file not found: ${fullscope_bin}" >&2; exit 1; }
+[[ -n "${core_bin}" ]] || { echo "ERROR: the internal Fullscope core is unavailable." >&2; exit 1; }
+[[ -x "${core_bin}" ]] || { echo "ERROR: internal Fullscope core is not executable: ${core_bin}" >&2; exit 1; }
 
 mkdir -p "$(dirname "${out_tsv}")"
 ulimit -n 65535 || true
@@ -104,6 +103,6 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] raw_fq=${raw_fq}"
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] out=${out_tsv}"
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] threads=${threads}"
 
-"${fullscope_bin}" process_fq "${raw_fq}" "${adapter_fa}" "${anchor_fa}" "${segthreshold}" "${threads}" "${out_tsv}"
+"${core_bin}" process_fq "${raw_fq}" "${adapter_fa}" "${anchor_fa}" "${segthreshold}" "${threads}" "${out_tsv}"
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Done"

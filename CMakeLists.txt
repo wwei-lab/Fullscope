@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 project(
   Fullscope
-  VERSION 1.1.0
+  VERSION 1.2.0
   DESCRIPTION "Full-length spatial transcriptomics processing toolkit"
   LANGUAGES CXX
 )
@@ -34,10 +34,10 @@ set(FULLSCOPE_SOURCES
   scripts/src/utils.cpp
 )
 
-add_executable(fullscope ${FULLSCOPE_SOURCES})
-target_include_directories(fullscope PRIVATE scripts/include)
+add_executable(fullscope-core ${FULLSCOPE_SOURCES})
+target_include_directories(fullscope-core PRIVATE scripts/include)
 target_link_libraries(
-  fullscope
+  fullscope-core
   PRIVATE
     PkgConfig::HTSLIB
     Threads::Threads
@@ -46,21 +46,28 @@ target_link_libraries(
 )
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-  target_compile_options(fullscope PRIVATE -O3 -Wall -Wextra -Wpedantic)
+  target_compile_options(fullscope-core PRIVATE -O3 -Wall -Wextra -Wpedantic)
 endif()
 
-install(TARGETS fullscope RUNTIME DESTINATION bin)
+install(TARGETS fullscope-core RUNTIME DESTINATION libexec/fullscope)
 
 install(
   PROGRAMS
     fullscope_toolkit/bin/fullscope-batch
+    fullscope_toolkit/bin/fullscope
     fullscope_toolkit/bin/fullscope-make-testdata
     fullscope_toolkit/bin/fullscope-merge
-    fullscope_toolkit/bin/fullscope-ont
-    fullscope_toolkit/bin/fullscope-segment
     fullscope_toolkit/bin/fullscope-submit
   DESTINATION bin
 )
+
+# Remove user-facing wrappers retired by the unified `fullscope` command.
+install(CODE [[
+  file(REMOVE
+    "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/fullscope-ont"
+    "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/fullscope-segment"
+  )
+]])
 
 install(
   PROGRAMS

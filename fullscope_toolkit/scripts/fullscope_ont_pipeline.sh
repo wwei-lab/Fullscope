@@ -71,7 +71,7 @@ anchor_fa="${ANCHOR_FA:-${toolkit_root}/refdata/anchor.fa}"
 genome="${GENOME_FA:-}"
 gtf="${GENES_GTF:-}"
 barcode_map="${ST_BARCODES_MAP:-$(command -v ST_BarcodeMap-0.0.1 || command -v ST_BarcodeMap || true)}"
-fullscope_bin="${FULLSCOPE_BIN:-$(command -v fullscope || true)}"
+core_bin="${FULLSCOPE_CORE_BIN:-}"
 bambu_r="${BAMBU_R:-${toolkit_root}/scripts/bambu_process.R}"
 merge_r="${MERGE_R:-${toolkit_root}/scripts/fs_merge_spatial_transcripts.R}"
 rscript_bin="${RSCRIPT_BIN:-$(command -v Rscript || true)}"
@@ -119,7 +119,7 @@ while [[ $# -gt 0 ]]; do
         --genome) genome="$2"; shift 2 ;;
         --gtf) gtf="$2"; shift 2 ;;
         --barcode-map) barcode_map="$2"; shift 2 ;;
-        --fullscope-bin) fullscope_bin="$2"; shift 2 ;;
+        --core-bin) core_bin="$2"; shift 2 ;;
         --bambu-r) bambu_r="$2"; shift 2 ;;
         --merge-r) merge_r="$2"; shift 2 ;;
         --rscript-bin) rscript_bin="$2"; shift 2 ;;
@@ -191,7 +191,7 @@ if [[ "$segment_only" -eq 0 ]]; then
 fi
 need_file "$adapter_fa"
 need_file "$anchor_fa"
-[[ -n "$fullscope_bin" ]] || { echo "ERROR: fullscope is not in PATH; use --fullscope-bin." >&2; exit 1; }
+[[ -n "$core_bin" ]] || { echo "ERROR: the internal Fullscope core is unavailable." >&2; exit 1; }
 if [[ "$segment_only" -eq 0 ]]; then
     need_file "$genome"
     need_file "$gtf"
@@ -203,7 +203,7 @@ if [[ "$segment_only" -eq 0 ]]; then
         need_file "$barcode_map"
     fi
 fi
-need_file "$fullscope_bin"
+[[ -x "$core_bin" ]] || { echo "ERROR: internal Fullscope core is not executable: $core_bin" >&2; exit 1; }
 if [[ "$run_bambu" -eq 1 ]]; then
     need_file "$bambu_r"
     [[ -n "$rscript_bin" ]] || { echo "ERROR: Rscript is required for --run-bambu." >&2; exit 1; }
@@ -219,7 +219,7 @@ if [[ "$segment_only" -eq 0 ]]; then
     if [[ "$skip_index" -eq 0 || ! -s "${cidindex_prefix}.precise.bin" ]]; then
         log "Building CID index"
         "$barcode_map" --in "$stereoindex" --out "$cidindex_txt" --action 3 -w "$threads"
-        "$fullscope_bin" build_idx p "$cidindex_txt" "$threads" "$kmer" "$bucketnum" "$cidindex_prefix"
+        "$core_bin" build_idx p "$cidindex_txt" "$threads" "$kmer" "$bucketnum" "$cidindex_prefix"
     fi
 fi
 
@@ -244,7 +244,7 @@ if [[ "$raw_fq" == *.gz ]]; then
 fi
 
 log "Running process_fq"
-"$fullscope_bin" process_fq "$raw_fq" "$adapter_fa" "$anchor_fa" "$segthreshold" "$threads" "$freg_fq"
+"$core_bin" process_fq "$raw_fq" "$adapter_fa" "$anchor_fa" "$segthreshold" "$threads" "$freg_fq"
 
 if [[ "$segment_only" -eq 1 ]]; then
     log "Segment-only mode finished"
@@ -253,9 +253,9 @@ if [[ "$segment_only" -eq 1 ]]; then
 fi
 
 log "Running extract_fq"
-"$fullscope_bin" extract_fq "$freg_fq" "$cidextract" "$threads"
+"$core_bin" extract_fq "$freg_fq" "$cidextract" "$threads"
 log "Running map_p"
-"$fullscope_bin" map_p "$cidextract" "${cidindex_prefix}.precise.bin" "$cidmap" "$threads" "$kmer"
+"$core_bin" map_p "$cidextract" "${cidindex_prefix}.precise.bin" "$cidmap" "$threads" "$kmer"
 log "Running minimap2 alignment"
 minimap2 -K500m -t "$threads" --secondary=no -a -x splice --splice-flank=yes "$genome" "$freg_fq" | samtools sort -@ "$threads" -o "$fqalign"
 samtools index "$fqalign"

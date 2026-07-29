@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -x "${script_dir}/../share/fullscope/scripts/fullscope_ont_pipeline.sh" ]]; then
+    toolkit_root="${script_dir}/../share/fullscope"
+    default_core="${script_dir}/../libexec/fullscope/fullscope-core"
+else
+    toolkit_root="${script_dir}/.."
+    repo_root="$(cd "${toolkit_root}/.." && pwd)"
+    default_core="${repo_root}/build/fullscope-core"
+fi
+
+export FULLSCOPE_CORE_BIN="${FULLSCOPE_CORE_BIN:-${default_core}}"
+
+usage() {
+    cat <<'EOF'
+Fullscope: full-length spatial transcriptomics processing
+
+Usage:
+  fullscope [run] [pipeline options]   Run the complete Fullscope workflow
+  fullscope segment [options]          Segment concatenated cDNA reads only
+  fullscope --version                  Print the installed version
+  fullscope --help                     Show this message
+
+Examples:
+  fullscope segment --raw-fq reads.fastq --out fragments.tsv
+  fullscope run --sample sample01 --outdir results --raw-fq reads.fastq.gz \
+    --stereoindex mask.barcodeToPos.h5 --genome genome.fa --gtf genes.gtf
+
+Run `fullscope run --help` or `fullscope segment --help` for mode-specific
+options.
+EOF
+}
+
+case "${1:-}" in
+    segment)
+        shift
+        exec "${toolkit_root}/scripts/fullscope_segment.sh" "$@"
+        ;;
+    run|ont)
+        shift
+        exec "${toolkit_root}/scripts/fullscope_ont_pipeline.sh" "$@"
+        ;;
+    --version|-V)
+        cat "${toolkit_root}/VERSION"
+        ;;
+    --help|-h|"")
+        usage
+        ;;
+    -*)
+        # Keep the concise `fullscope --sample ...` form for the main workflow.
+        exec "${toolkit_root}/scripts/fullscope_ont_pipeline.sh" "$@"
+        ;;
+    *)
+        echo "ERROR: unknown Fullscope command: $1" >&2
+        usage >&2
+        exit 2
+        ;;
+esac

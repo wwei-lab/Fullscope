@@ -54,8 +54,6 @@ Prefix:
 
 Commands:
   $prefix/bin/fullscope
-  $prefix/bin/fullscope-ont
-  $prefix/bin/fullscope-segment
   $prefix/bin/fullscope-submit
 
 If needed, add the installation to PATH:

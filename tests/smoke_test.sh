@@ -2,10 +2,10 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-binary="${1:-${repo_root}/build/fullscope}"
+command_path="${1:-${repo_root}/fullscope_toolkit/bin/fullscope}"
 
-if [[ ! -x "$binary" ]]; then
-    echo "ERROR: Fullscope binary is not executable: $binary" >&2
+if [[ ! -x "$command_path" ]]; then
+    echo "ERROR: Fullscope command is not executable: $command_path" >&2
     exit 1
 fi
 
@@ -13,17 +13,13 @@ tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/fullscope-smoke.XXXXXX")"
 trap 'rm -rf -- "$tmp_dir"' EXIT
 
 input_fq="${repo_root}/fullscope_toolkit/testdata/smoke_20.fastq"
-adapter_fa="${repo_root}/fullscope_toolkit/refdata/adapters.fa"
-anchor_fa="${repo_root}/fullscope_toolkit/refdata/anchor.fa"
 output_tsv="${tmp_dir}/smoke_fragment.tsv"
 
-"$binary" process_fq \
-    "$input_fq" \
-    "$adapter_fa" \
-    "$anchor_fa" \
-    0.15 \
-    2 \
-    "$output_tsv"
+"$command_path" segment \
+    --raw-fq "$input_fq" \
+    --out "$output_tsv" \
+    --segthreshold 0.15 \
+    --threads 2
 
 [[ -s "$output_tsv" ]] || {
     echo "ERROR: segmentation output is missing or empty" >&2

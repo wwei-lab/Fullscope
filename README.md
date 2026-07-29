@@ -88,9 +88,9 @@ bash install.sh --prefix "$CONDA_PREFIX"
 Confirm the installation:
 
 ```bash
-fullscope
-fullscope-segment --help
-fullscope-ont --version
+fullscope --help
+fullscope segment --help
+fullscope --version
 ```
 
 ### Build with an existing environment
@@ -121,7 +121,7 @@ Use this mode to validate installation or to split concatenated cDNA reads
 before downstream processing:
 
 ```bash
-fullscope-segment \
+fullscope segment \
   --raw-fq reads.fastq \
   --out results/sample_fragment.fastq \
   --threads 8
@@ -131,7 +131,7 @@ The packaged adapter and anchor FASTA files are used automatically. Override
 them only when the library design differs:
 
 ```bash
-fullscope-segment \
+fullscope segment \
   --raw-fq reads.fastq \
   --out results/sample_fragment.fastq \
   --adapter-fa custom_adapters.fa \
@@ -147,7 +147,7 @@ Full CID-index creation requires
 separately and is not bundled with Fullscope.
 
 ```bash
-fullscope-ont \
+fullscope run \
   --sample sample01 \
   --outdir results/sample01 \
   --raw-fq reads.fastq.gz \
@@ -164,7 +164,7 @@ decompressed into the sample output directory before C++ processing.
 ### 3. Complete workflow from BAM
 
 ```bash
-fullscope-ont \
+fullscope run \
   --sample sample01 \
   --outdir results/sample01 \
   --input-bam reads.bam \
@@ -178,7 +178,7 @@ fullscope-ont \
 ### 4. Add transcript annotation and spatial merge
 
 ```bash
-fullscope-ont \
+fullscope run \
   --sample sample01 \
   --outdir results/sample01 \
   --raw-fq reads.fastq.gz \
@@ -202,7 +202,7 @@ cp fullscope_toolkit/config/config.example.env site.env
 Then run:
 
 ```bash
-fullscope-ont \
+fullscope run \
   --config-env site.env \
   --sample sample01 \
   --outdir results/sample01 \
@@ -238,21 +238,24 @@ file.
 | `--config-env PATH` | Load site-specific defaults. |
 | `--version` | Print the toolkit version. |
 
-Run `fullscope-ont --help` for the complete parser-supported interface,
+Run `fullscope run --help` for the complete parser-supported interface,
 including explicit intermediate-file overrides.
 
-## Core C++ commands
+## Unified command
 
-The installed `fullscope` executable also exposes modular commands:
+Fullscope has one public command with two processing modes:
 
 ```text
-fullscope process_fq <input.fq> <adapters.fa> <anchor.fa> <threshold> <threads> <output.fq>
-fullscope extract <input.bam> <genes.gtf> <output.tsv> <threads>
-fullscope extract_fq <input.fq> <output.tsv> <threads>
-fullscope build_idx <f|p> <cid_list.txt> <threads> <kmer> <buckets> <output_prefix>
-fullscope map <reads.tsv> <index.cid> <thresholds.txt> <output.tsv> <threads> <kmer> <buckets>
-fullscope map_p <reads.tsv> <index.precise.bin> <output.tsv> <threads> <kmer>
+fullscope run [options]       complete spatial-transcriptomics workflow
+fullscope segment [options]   cDNA segmentation only
 ```
+
+For convenience, complete-workflow options can also be passed directly, for
+example `fullscope --sample sample01 ...`. The compiled C++ engine is installed
+as an internal component and is not part of the public command-line interface.
+
+Starting with version 1.2.0, `fullscope run` replaces `fullscope-ont`, and
+`fullscope segment` replaces `fullscope-segment`.
 
 The toolkit uses the precise `build_idx p` and `map_p` path by default.
 
@@ -331,7 +334,7 @@ Fullscope/
 - The bundled smoke data validates installation and segmentation, not a
   biological end-to-end result.
 - Preserve the editable configuration used for each run and record the
-  Fullscope version with `fullscope-ont --version`.
+  Fullscope version with `fullscope --version`.
 
 ## Archived version
 
