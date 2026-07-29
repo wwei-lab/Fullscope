@@ -10,6 +10,7 @@ dependencies:
   - seqan3
   - cereal
   - htslib
+  - zlib
   - minimap2
   - samtools
   - bedtools

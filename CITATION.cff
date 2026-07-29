@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use Fullscope, please cite the associated Nature Methods article."
 title: "Fullscope: full-length single-cell spatial transcriptomics software"
-version: 1.2.0
+version: 1.2.1
 date-released: 2026-07-29
 license: Apache-2.0
 repository-code: "https://github.com/wwei-lab/Fullscope"

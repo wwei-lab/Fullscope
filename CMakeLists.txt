@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 project(
   Fullscope
-  VERSION 1.2.0
+  VERSION 1.2.1
   DESCRIPTION "Full-length spatial transcriptomics processing toolkit"
   LANGUAGES CXX
 )
@@ -13,8 +13,51 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH ON)
 
 find_package(Threads REQUIRED)
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(HTSLIB REQUIRED IMPORTED_TARGET htslib)
+
+# Prefer pkg-config because it carries HTSlib's transitive link flags.  Some
+# Conda environments, however, contain a usable libhts.so while htslib.pc
+# cannot be resolved (most commonly because zlib.pc is missing).  Fall back to
+# locating the shared library directly so those environments remain usable.
+find_package(PkgConfig QUIET)
+if(PkgConfig_FOUND)
+  pkg_check_modules(HTSLIB QUIET IMPORTED_TARGET htslib)
+endif()
+
+if(TARGET PkgConfig::HTSLIB)
+  set(FULLSCOPE_HTSLIB_TARGET PkgConfig::HTSLIB)
+else()
+  find_path(
+    HTSLIB_INCLUDE_DIR
+    NAMES htslib/hts.h
+    HINTS "$ENV{CONDA_PREFIX}/include"
+  )
+  find_library(
+    HTSLIB_LIBRARY
+    NAMES hts
+    HINTS "$ENV{CONDA_PREFIX}/lib"
+  )
+
+  if(NOT HTSLIB_INCLUDE_DIR OR NOT HTSLIB_LIBRARY)
+    message(FATAL_ERROR
+      "HTSlib was not found. Install the core dependencies with:\n"
+      "  mamba install -c conda-forge -c bioconda htslib zlib\n"
+      "Then rerun install.sh in the activated Conda environment."
+    )
+  endif()
+
+  add_library(fullscope_htslib UNKNOWN IMPORTED)
+  set_target_properties(
+    fullscope_htslib
+    PROPERTIES
+      IMPORTED_LOCATION "${HTSLIB_LIBRARY}"
+      INTERFACE_INCLUDE_DIRECTORIES "${HTSLIB_INCLUDE_DIR}"
+  )
+  set(FULLSCOPE_HTSLIB_TARGET fullscope_htslib)
+  message(WARNING
+    "pkg-config could not resolve HTSlib; using ${HTSLIB_LIBRARY} directly. "
+    "Installing zlib in this Conda environment is recommended."
+  )
+endif()
 
 find_package(seqan3 CONFIG REQUIRED)
 find_package(cereal CONFIG REQUIRED)
@@ -39,7 +82,7 @@ target_include_directories(fullscope-core PRIVATE scripts/include)
 target_link_libraries(
   fullscope-core
   PRIVATE
-    PkgConfig::HTSLIB
+    ${FULLSCOPE_HTSLIB_TARGET}
     Threads::Threads
     seqan3::seqan3
     cereal::cereal

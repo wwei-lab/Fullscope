@@ -31,9 +31,18 @@ done
 
 command -v cmake >/dev/null 2>&1 || {
     echo "ERROR: cmake is required. Create the conda environment first:" >&2
-    echo "  conda env create -f environment.yml" >&2
+    echo "  mamba env create -f environment-core.yml" >&2
     exit 1
 }
+
+if [[ -n "${CONDA_PREFIX:-}" ]] && command -v pkg-config >/dev/null 2>&1; then
+    if ! pkg-config --exists htslib 2>/dev/null; then
+        echo "WARNING: pkg-config cannot resolve HTSlib in the active Conda environment." >&2
+        echo "         CMake will try a direct-library fallback." >&2
+        echo "         Recommended repair:" >&2
+        echo "           mamba install -n \"${CONDA_DEFAULT_ENV:-fullscope}\" -c conda-forge -c bioconda htslib zlib" >&2
+    fi
+fi
 
 generator_args=()
 if [[ ! -f "${build_dir}/CMakeCache.txt" ]] && command -v ninja >/dev/null 2>&1; then

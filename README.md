@@ -113,6 +113,21 @@ bash tests/smoke_test.sh "$(command -v fullscope)"
 
 A successful run ends with `Smoke test passed`.
 
+### HTSlib or zlib detection errors
+
+If an older or manually assembled Conda environment reports that `htslib` or
+its `zlib` dependency is missing, repair the active environment and rebuild:
+
+```bash
+mamba install -c conda-forge -c bioconda htslib zlib
+rm -rf build
+bash install.sh --prefix "$CONDA_PREFIX"
+```
+
+Fullscope 1.2.1 and later also fall back to locating the HTSlib headers and
+shared library directly when a usable Conda installation is present but its
+`pkg-config` metadata is incomplete.
+
 ## Quick start
 
 ### 1. Segmentation only
