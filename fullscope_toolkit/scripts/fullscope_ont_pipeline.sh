@@ -19,6 +19,12 @@ Optional:
   --config-env PATH     Source a site/local env file before resolving defaults.
   --segment-only        Run only process_fq and stop after segmentation output.
   --fragment-out PATH   Explicit output path for process_fq TSV.
+  --bambu-min-read-length N
+                        Minimum query length retained for Bambu (default: 200).
+  --bambu-max-read-length N
+                        Maximum query length retained for Bambu (default: 20000).
+  --bambu-bam PATH      Explicit filtered BAM checkpoint/output path.
+  --skip-bambu-filter   Pass the complete alignment directly to Bambu.
   --version             Print toolkit version and exit.
 
 External requirement for CID index creation:
@@ -60,11 +66,14 @@ merge_annot=0
 skip_index=0
 skip_fastq=0
 segment_only=0
+skip_bambu_filter=0
 
 threads="${SLURM_CPUS_PER_TASK:-32}"
 kmer=7
 bucketnum=6
 segthreshold=0.15
+bambu_min_read_length=200
+bambu_max_read_length=20000
 
 adapter_fa="${ADAPTER_FA:-${toolkit_root}/refdata/adapters.fa}"
 anchor_fa="${ANCHOR_FA:-${toolkit_root}/refdata/anchor.fa}"
@@ -80,6 +89,7 @@ cidindex_txt=""
 cidindex_prefix=""
 cidmap=""
 fqalign=""
+bambu_bam=""
 bambu_out_prefix=""
 bambu_sample=""
 transdf_qs=""
@@ -121,6 +131,10 @@ while [[ $# -gt 0 ]]; do
         --barcode-map) barcode_map="$2"; shift 2 ;;
         --core-bin) core_bin="$2"; shift 2 ;;
         --bambu-r) bambu_r="$2"; shift 2 ;;
+        --bambu-min-read-length) bambu_min_read_length="$2"; shift 2 ;;
+        --bambu-max-read-length) bambu_max_read_length="$2"; shift 2 ;;
+        --bambu-bam) bambu_bam="$2"; shift 2 ;;
+        --skip-bambu-filter) skip_bambu_filter=1; shift ;;
         --merge-r) merge_r="$2"; shift 2 ;;
         --rscript-bin) rscript_bin="$2"; shift 2 ;;
         --cidindex-txt) cidindex_txt="$2"; shift 2 ;;
@@ -149,6 +163,12 @@ if [[ -z "$input_bam" && -z "$raw_fq" ]]; then
     echo "ERROR: provide either --input-bam or --raw-fq." >&2
     exit 1
 fi
+if [[ ! "$bambu_min_read_length" =~ ^[0-9]+$ ||
+      ! "$bambu_max_read_length" =~ ^[0-9]+$ ||
+      "$bambu_min_read_length" -gt "$bambu_max_read_length" ]]; then
+    echo "ERROR: Bambu read-length limits must be non-negative integers with min <= max." >&2
+    exit 1
+fi
 
 out_prefix="${out_prefix:-$sample}"
 bambu_sample="${bambu_sample:-$sample}"
@@ -169,6 +189,7 @@ freg_fq="${fragment_out:-${outdir}/Fqsegment/${out_prefix}_fragment.tsv}"
 cidextract="${outdir}/CIDextract/${out_prefix}_ont_cidextract.tsv"
 cidmap="${cidmap:-${outdir}/CIDmap/${out_prefix}}"
 fqalign="${fqalign:-${outdir}/Alignment/${out_prefix}_ont.sorted.bam}"
+bambu_bam="${bambu_bam:-${fqalign%.bam}.bambu.filtered.q${bambu_min_read_length}-${bambu_max_read_length}.bam}"
 bambu_out_prefix="${bambu_out_prefix:-${outdir}/Bambu/${sample}}"
 transdf_qs="${transdf_qs:-${bambu_out_prefix}_trans_total_anno.qs}"
 merged_all_qs="${merged_all_qs:-${outdir}/${sample}_fsraw_merged_data.qs}"
@@ -261,8 +282,34 @@ minimap2 -K500m -t "$threads" --secondary=no -a -x splice --splice-flank=yes "$g
 samtools index "$fqalign"
 
 if [[ "$run_bambu" -eq 1 ]]; then
+    if [[ "$skip_bambu_filter" -eq 1 ]]; then
+        bambu_input_bam="$fqalign"
+        log "Skipping the Bambu alignment filter by request"
+    else
+        bambu_input_bam="$bambu_bam"
+        if [[ -s "$bambu_input_bam" && -s "${bambu_input_bam}.bai" ]] &&
+           samtools quickcheck "$bambu_input_bam"; then
+            log "Reusing Bambu-filtered alignment: $bambu_input_bam"
+        else
+            tmp_bambu_bam="${bambu_input_bam}.tmp.$$.bam"
+            filter_counts="${bambu_input_bam}.filter_counts.json"
+            tmp_filter_counts="${filter_counts}.tmp.$$"
+            rm -f -- "$tmp_bambu_bam" "${tmp_bambu_bam}.bai" "$tmp_filter_counts"
+            log "Filtering alignment for Bambu: primary mapped reads, query length ${bambu_min_read_length}-${bambu_max_read_length}"
+            samtools view -@ "$threads" -b -F 0x804 \
+                -e "qlen >= ${bambu_min_read_length} && qlen <= ${bambu_max_read_length}" \
+                --save-counts "$tmp_filter_counts" \
+                -o "$tmp_bambu_bam" "$fqalign"
+            samtools quickcheck "$tmp_bambu_bam"
+            samtools index -@ "$threads" "$tmp_bambu_bam"
+            mv -- "$tmp_bambu_bam" "$bambu_input_bam"
+            mv -- "${tmp_bambu_bam}.bai" "${bambu_input_bam}.bai"
+            mv -- "$tmp_filter_counts" "$filter_counts"
+            log "Bambu alignment filter counts: $(tr -d '\n' < "$filter_counts")"
+        fi
+    fi
     log "Running bambu"
-    "$rscript_bin" "$bambu_r" "$gtf" "$genome" "$fqalign" "$bambu_out_prefix" "$bambu_sample"
+    "$rscript_bin" "$bambu_r" "$gtf" "$genome" "$bambu_input_bam" "$bambu_out_prefix" "$bambu_sample"
 fi
 
 if [[ "$merge_annot" -eq 1 ]]; then

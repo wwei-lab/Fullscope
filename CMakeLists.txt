@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 project(
   Fullscope
-  VERSION 1.2.1
+  VERSION 1.2.2
   DESCRIPTION "Full-length spatial transcriptomics processing toolkit"
   LANGUAGES CXX
 )

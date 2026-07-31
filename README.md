@@ -249,6 +249,10 @@ file.
 | `--skip-index` | Reuse an existing precise CID index. |
 | `--skip-fastq` | Reuse an existing converted/decompressed FASTQ. |
 | `--run-bambu` | Run Bambu transcript annotation. |
+| `--bambu-min-read-length N` | Minimum query length retained for Bambu; default 200. |
+| `--bambu-max-read-length N` | Maximum query length retained for Bambu; default 20,000. |
+| `--bambu-bam PATH` | Explicit filtered BAM checkpoint/output path. |
+| `--skip-bambu-filter` | Disable the default primary-mapped/read-length filter. |
 | `--merge-annot` | Merge Bambu assignments with spatial CID results. |
 | `--config-env PATH` | Load site-specific defaults. |
 | `--version` | Print the toolkit version. |
@@ -311,6 +315,7 @@ results/sample01/
   CIDextract/     per-read CID candidates
   CIDmap/         mapped spatial CIDs
   Alignment/      splice-aware BAM and index
+                  Bambu-filtered primary mapped BAM and filter counts
   Bambu/          optional transcript assignments
   raw_fastq/      BAM-converted or decompressed FASTQ, when needed
   *_fsraw_merged_data.qs
