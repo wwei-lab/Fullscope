@@ -24,7 +24,7 @@ Associated paper:
   - FASTQ/BAM input;
   - Stereo-seq barcode-index preparation;
   - splice-aware alignment;
-  - optional Bambu transcript annotation;
+  - optional Bambu or IsoQuant transcript annotation;
   - merging transcript assignments with spatial coordinates;
   - single-sample and Slurm batch execution.
 - Small test data and a smoke test.
@@ -43,7 +43,7 @@ concatenated long-read FASTQ or BAM
        v                      v
 CID extraction/mapping   splice-aware alignment
        |                      |
-       |                 optional Bambu
+       |             Bambu or IsoQuant
        +----------+-----------+
                   |
                   v
@@ -83,6 +83,15 @@ the complete environment instead:
 mamba env create -f environment.yml
 conda activate fullscope
 bash install.sh --prefix "$CONDA_PREFIX"
+```
+
+IsoQuant is kept in a small separate environment to avoid changing the tested
+R/Bioconductor dependency set used by Bambu. Install it once and provide its
+executable to Fullscope:
+
+```bash
+mamba env create -f environment-isoquant.yml
+ISOQUANT_BIN="$(conda run -n fullscope-isoquant which isoquant.py)"
 ```
 
 Confirm the installation:
@@ -206,6 +215,43 @@ fullscope run \
   --threads 32
 ```
 
+Use IsoQuant instead of Bambu by selecting `--run-isoquant`. Fullscope runs
+reference-annotation quantification (`--no_model_construction`) and retains
+IsoQuant's assignment class for every read:
+
+```bash
+fullscope run \
+  --sample sample01 \
+  --outdir results/sample01 \
+  --raw-fq reads.fastq.gz \
+  --stereoindex sample01.barcodeToPos.h5 \
+  --barcode-map /path/to/ST_BarcodeMap \
+  --genome reference/genome.fa \
+  --gtf reference/genes.gtf \
+  --run-isoquant \
+  --isoquant-bin "$ISOQUANT_BIN" \
+  --merge-annot \
+  --threads 32
+```
+
+To compare annotators without repeating segmentation, CID mapping, or genome
+alignment, reuse the existing checkpoints:
+
+```bash
+fullscope run \
+  --annotation-only \
+  --sample sample01 \
+  --outdir results/sample01 \
+  --fqalign results/sample01/Alignment/sample01_ont.sorted.bam \
+  --cidmap results/sample01/CIDmap/sample01 \
+  --genome reference/genome.fa \
+  --gtf reference/genes.gtf \
+  --run-isoquant \
+  --isoquant-bin "$ISOQUANT_BIN" \
+  --merge-annot \
+  --threads 32
+```
+
 ## Configuration
 
 For repeated runs, copy the portable example and fill in local reference paths:
@@ -245,15 +291,24 @@ file.
 | `--adapter-fa PATH` | Override the packaged adapter FASTA. |
 | `--anchor-fa PATH` | Override the packaged anchor FASTA. |
 | `--segment-only` | Stop after cDNA segmentation. |
+| `--annotation-only` | Reuse `--fqalign` and `--cidmap` and run only annotation/merge. |
 | `--fragment-out PATH` | Explicit segmentation output path. |
 | `--skip-index` | Reuse an existing precise CID index. |
 | `--skip-fastq` | Reuse an existing converted/decompressed FASTQ. |
 | `--run-bambu` | Run Bambu transcript annotation. |
+| `--run-isoquant` | Run IsoQuant reference-isoform annotation; mutually exclusive with `--run-bambu`. |
+| `--isoquant-bin PATH` | IsoQuant executable; defaults to `isoquant` in `PATH`. |
+| `--isoquant-output-dir PATH` | IsoQuant output root; default `OUTDIR/IsoQuant`. |
+| `--isoquant-prefix NAME` | IsoQuant output prefix; default sample name. |
+| `--isoquant-genedb-output PATH` | Local cache for IsoQuant's converted GTF database. |
+| `--isoquant-assignments PATH` | Override the expected IsoQuant `read_assignments.tsv.gz` checkpoint. |
+| `--isoquant-read-info PATH` | Legacy alias for `--isoquant-assignments`. |
+| `--isoquant-max-coverage-small-chr N` | Small-chromosome coverage threshold; default `-1` disables IsoQuant downsampling so all reads are retained. |
 | `--bambu-min-read-length N` | Minimum query length retained for Bambu; default 200. |
 | `--bambu-max-read-length N` | Maximum query length retained for Bambu; default 20,000. |
 | `--bambu-bam PATH` | Explicit filtered BAM checkpoint/output path. |
 | `--skip-bambu-filter` | Disable the default primary-mapped/read-length filter. |
-| `--merge-annot` | Merge Bambu assignments with spatial CID results. |
+| `--merge-annot` | Merge selected annotator assignments with spatial CID results. |
 | `--config-env PATH` | Load site-specific defaults. |
 | `--version` | Print the toolkit version. |
 
@@ -317,13 +372,30 @@ results/sample01/
   Alignment/      splice-aware BAM and index
                   Bambu-filtered primary mapped BAM and filter counts
   Bambu/          optional transcript assignments
+  IsoQuant/       optional read assignments, normalized QS, and class summary
   raw_fastq/      BAM-converted or decompressed FASTQ, when needed
   *_fsraw_merged_data.qs
   *_fsraw_merged_data_uniquereads.qs
+  *_isoquant_fsraw_merged_data.qs
+  *_isoquant_fsraw_merged_data_uniquereads.qs
 ```
 
 The two `.qs` matrices contain transcript/gene annotation and spatial `x`, `y`
-coordinates. They are produced only when `--run-bambu --merge-annot` is used.
+coordinates. IsoQuant's all-assignment matrix preserves multiple candidate rows
+and assignment-type metadata for ambiguous reads. The corresponding
+`uniquereads` matrix retains reads mapping to exactly one distinct transcript,
+matching the existing Bambu merge rule. An `assignment_summary.tsv` file reports
+read, gene, and transcript counts by IsoQuant assignment class.
+
+For a direct Bambu/IsoQuant ambiguity comparison, run the installed helper:
+
+```bash
+Rscript "$CONDA_PREFIX/share/fullscope/scripts/compare_isoform_assignments.R" \
+  results/sample01/Bambu/sample01_trans_total_anno.qs \
+  results/sample01/IsoQuant/sample01_trans_total_anno.qs \
+  results/sample01/sample01_bambu_vs_isoquant.tsv \
+  sample01
+```
 
 ## Repository layout
 

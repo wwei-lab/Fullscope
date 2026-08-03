@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 project(
   Fullscope
-  VERSION 1.2.2
+  VERSION 1.3.0
   DESCRIPTION "Full-length spatial transcriptomics processing toolkit"
   LANGUAGES CXX
 )
@@ -126,6 +126,8 @@ install(
   FILES
     fullscope_toolkit/scripts/bambu_process.R
     fullscope_toolkit/scripts/fs_merge_spatial_transcripts.R
+    fullscope_toolkit/scripts/isoquant_read_info_to_qs.R
+    fullscope_toolkit/scripts/compare_isoform_assignments.R
   DESTINATION share/fullscope/scripts
 )
 

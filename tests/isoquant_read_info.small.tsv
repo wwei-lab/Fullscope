@@ -1,0 +1,5 @@
+read_id	chr	strand	gene_id	gene_assignment_type	isoform_id	isoform_assignment_type	assignment_events	classification	exons	polyA	CAGE	canonical	barcode	umi	cell_type	groups	additional
+read_unique	chr1	+	ENSMUSG00000000001	unique	ENSMUST00000000001	unique	.	known	100-200	True	False	True	.	.	.	.	.
+read_ambiguous	chr1	+	ENSMUSG00000000002	ambiguous	ENSMUST00000000002	ambiguous	.	known	300-400	False	False	True	.	.	.	.	.
+read_ambiguous	chr1	+	ENSMUSG00000000002	ambiguous	ENSMUST00000000003	ambiguous	.	known	300-450	False	False	True	.	.	.	.	.
+read_unassigned	chr1	+	.	noninformative	.	noninformative	.	.	500-550	False	False	False	.	.	.	.	.

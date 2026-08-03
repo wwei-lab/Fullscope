@@ -1,0 +1,6 @@
+name: fullscope-isoquant
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - isoquant=3.12.0
